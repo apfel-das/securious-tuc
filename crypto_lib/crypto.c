@@ -1,17 +1,13 @@
 #include "crypto.h"
-#include <fcntl.h> 
-#include <unistd.h>
-//function declarations.
 
 
-#define printable 32  // an offset to reach in the printable ASCII area [32 - 197 in decimal]
 
 int main()
 {
 
 	char *cipher = NULL;
-	char *key = NULL;
-	char *out = NULL;
+	uint8_t *key = NULL;
+	char *enc = NULL;
 	char *orig = NULL;
 
 	printf("Hello crypto-curious..\n");
@@ -19,15 +15,116 @@ int main()
 
 	printf("plaintext: ");
 	cipher = readInput();
-	cipher = formatInput(cipher, out);
-	printf("Input check gave:%s\n",cipher);
+	cipher = formatInput(cipher, enc);
 	
+   	key = getRandomKey(strlen(cipher));
 
+	
 
 	return 0;
 }
 
 
+/*
+	
+	** OPERATION HANDLERS **
+
+*/
+
+/*
+	Given a character, returns the respective index in charPool.
+	Args:		The character to be tracked.
+	Returns:	The respective index in the adjacent matrix or -1 if not found.
+*/
+int getPoolIndex(char c)
+{
+	//raw parsing is just a fun way of deciding.
+	for (int i = 0; i < POOL_SIZE; i++)
+	{	
+		//if character given is present [A-Z, a-z, 0-9], return the index in the adjacent matrix.
+		if(c == *(charPool + i))
+			return i;
+	}
+
+	//return failure.
+	return -1;
+}
+
+/*
+	Given a character, returns the respective index in caps.
+	Args:		The character to be tracked.
+	Returns:	The respective index in the adjacent matrix or -1 if not found.
+*/
+int getCapsIndex(char c)
+{
+	//raw parsing is just a fun way of deciding.
+	for (int i = 0; i < ALPHA_POOL_SIZE; i++)
+	{	
+		//if character given is present [A-Z], return the index in the adjacent matrix.
+		if(c == *(caps + i))
+			return i;
+	}
+
+	//return failure.
+	return -1;
+}
+
+/*
+	Return the length of the converted string in terms of 8-byte integers.
+*/
+
+int getLength(uint8_t *arg1)
+{
+	return (sizeof((char *)arg1) / sizeof(uint8_t));
+}
+
+
+/*
+	Returns a random alpha-arithmetic digit using a file descriptor on "/dev/urandom".
+	More: "crypto.h"
+*/
+char getRandomDigit()
+{
+
+	//open the file descriptor "showing" the entropy-library.
+	randGen = fopen(RANDOM_DEV, "rb");
+	
+	//fish the first digit out of the buffer.
+	char digit = getc(randGen);
+
+
+	// trapped until a valid digit appears.
+	while(!isdigit(digit) && !isalpha(digit))
+		digit = getc(randGen);
+
+	//close open resources
+	fclose(randGen);
+
+
+	return digit;
+}
+
+
+/*
+
+	Contructs a pseudo-random key of <siz> bytes.
+	
+*/
+uint8_t *getRandomKey(int siz)
+{
+	uint8_t *key = (uint8_t *)malloc(siz);
+
+	//parse and create.
+	for (int i = 0; i < siz; i++)
+	{
+		*(key +i) = getRandomDigit();
+	}
+
+	printf("%s\n",key );
+	return key;
+
+	
+}
 
 
 /*
@@ -74,68 +171,6 @@ char *formatInput(char *inp, char *out)
 
 
 
-// Todo: Fix issues!! Make it more sophisticated..
-
-void encrypt(char *inp, char *out, char *key)
-{
-
-	for (int i = 0; i < strlen(inp); ++i)
-	{
-		// only alphanumeric characters get to be converted.
-		if(isalpha(*(inp+i)) || isdigit(*(inp + i)))
-		{
-			
-				int f = (*(inp + i))^(*(key + i));
-				printf("Original: %s Char: %c %d  Char_k : %c %d XOR: %d\n",inp, *(inp+i), *(inp+i), *(key+i), *(key+i), f);
-
-				*(out + i) = (char)f;
-			
-			
-		}
-		else
-		{
-			//non convertable character, just copy.
-			*(out + i) = *(inp +i);
-		}
-
-	}
-	
-
-
-	//manually append string termination character at end.
-	*(out + strlen(inp)) = '\0';
-
-}
-
-void decrypt(char *inp, char *out, char *key)
-{
-
-	//parse the cipher 
-	for (int i = 0; i < strlen(inp); ++i)
-	{
-		
-	
-		// XOR key and input in respective offset.
-		int f = (*(key + i))^(*(inp + i));
-		
-		// let the user know some.
-		printf("Original: %s Char: %c %d  Char_k : %c %d XOR: %d\n",inp, *(inp+i), *(inp+i), *(key+i), *(key+i), f);
-
-		*(out + i) = (char)f; 
-	
-			
-		
-
-	}
-	
-
-
-	//manually append string termination character at end.
-	*(out + strlen(inp)) = '\0';
-
-}
-
-
 /*
 	Reads user's input (STDIN) dynamically with the use of realloc,malloc. 
 	Parses the input character - wise and then decides whether reallocation of memory needs to be done [run - time].
@@ -168,9 +203,7 @@ char *readInput()
 
 	//not much for error handling but at least there's is one..
 	if(!inp)
-		exit(-1);
-	printf("We've read %s\n",inp );
-
+		return NULL;
 	return inp;
 
 
