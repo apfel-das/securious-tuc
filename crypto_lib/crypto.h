@@ -59,9 +59,9 @@ void vPoolInit();
 
 int getPoolIndex(char c);
 int getCapsIndex(char c);
-int getLength(uint8_t *arg1);
 char getRandomDigit();
 uint8_t *getRandomKey(int siz);
+void printHex(char *key);
 
 /*
 	** Input handlers **
@@ -94,3 +94,12 @@ char *formatInput(char *inp, char *out);
 char *readInput();
 
 
+
+/*
+	
+	** Crypto Functions **
+
+*/
+
+char *encryptOTP(char *inp,  char *key);
+char *decryptOTP(char *inp, char *key);

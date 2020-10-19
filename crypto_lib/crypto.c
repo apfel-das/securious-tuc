@@ -1,7 +1,6 @@
 #include "crypto.h"
 
 
-
 int main()
 {
 
@@ -16,20 +15,91 @@ int main()
 	printf("plaintext: ");
 	cipher = readInput();
 	cipher = formatInput(cipher, enc);
+	printHex(cipher);
 	
    	key = getRandomKey(strlen(cipher));
+
+   	poolInit();
+   	enc = encryptOTP(cipher, key);
+
+   	printf("[OTP] encrypted: ");
+   	printHex(enc);
+
+   	orig = decryptOTP(enc, key);
+   	printf("[OTP] decrypted: %s\n", orig);
+
 
 	
 
 	return 0;
 }
+/*
 
+	** Initializers **
+
+*/
+
+/*
+	Initializing the character set pool.
+	A-Z -> indexes[ 0 - 25]
+	a-z -> indexes[26 - 51]
+	0-9 -> indexes[52 - 62]
+
+*/
+
+void poolInit()
+{
+	int initIndex = 65;  // 65 (dec) -> A (char)
+
+	//initializing caps, 2*26 letters to assign + 10 numbers.
+	for (int i = 0; i < POOL_SIZE; i++)
+	{
+		if(i < 26)				
+			charPool[i] = initIndex + i;	  // initializing capitals 	
+		else if(i < 52)
+			charPool[i] = initIndex + (i%26) + 32; // a-A = 32, initializing small letters
+		else
+			charPool[i] = i % 52;	// numbers in ASCII decimal			
+	}
+
+
+}
 
 /*
 	
 	** OPERATION HANDLERS **
 
 */
+
+/*
+	Prints a given string in hex format.
+	Note: 	What printed on screen is the hex-equiavalent of the characters creating the string.
+			Remember that each ASCII digit/char, has a 2-byte HEX-represantation so for a string of 5 charcters, 10 bytes will be displayed.
+
+	Ex:		"lemon" -> 6c656d6f6e where l -> 6c, e -> 65, .., n -> 6e
+	
+
+*/
+void printHex(char *key)
+{
+	//caching.
+	char *curr = key;
+	
+	//offset count
+	int off = 0;
+
+	//parse the key, print as hex [2 digit align on console].
+	while(off < strlen(key))
+	{
+		printf("%02x", *(curr + off));
+		off++;
+	}
+
+	//change line.
+	printf("\n");
+	
+	
+}
 
 /*
 	Given a character, returns the respective index in charPool.
@@ -67,15 +137,6 @@ int getCapsIndex(char c)
 
 	//return failure.
 	return -1;
-}
-
-/*
-	Return the length of the converted string in terms of 8-byte integers.
-*/
-
-int getLength(uint8_t *arg1)
-{
-	return (sizeof((char *)arg1) / sizeof(uint8_t));
 }
 
 
@@ -209,4 +270,81 @@ char *readInput()
 
 
 }
+
+
+/*
+	
+		ENCRYPTION FUNCTIONS
+
+*/
+
+
+
+
+/*
+	Encrypts the given string by bit-wise xoring with the given key.
+	Args: 	<char *inp> pointer to a char array representing the actual plaintext.
+			<char *key> pointer to a char array representing the encryption key [also known as pad/random pad].	
+	Returns: The encrypted text/ciphertext in <char *> format.
+	Warning: The ciphertext might include non-printable or "problematic" ASCII characters ['\0',' ', etc..]
+	Tipp:	 Use <printHex()> in order to print the cipher for validation.
+
+*/
+
+char *encryptOTP(char *inp,  char *key)
+{
+	//reserving some space.
+	char *out = (char *)malloc(sizeof(char )*strlen(key) + 1);
+	
+	//parse the input, xor with key.
+	for (int i = 0; i < strlen(inp); ++i)
+	{
+		// only alphanumeric characters get to be converted, xoring with the key gives a ciphertext
+		if(isalpha(*(inp+i)) || isdigit(*(inp + i)))
+			*(out + i) = (char)(*(inp + i))^(*(key + i));
+		else
+		{
+			fprintf(stderr, "Something went wrong upon encyption..\n");
+			exit(-1);
+		}
+
+
+	}
+
+	//manually appending terminating char.
+	*(out + strlen(key)) = '\0';
+
+	return out; 
+	
+}
+
+
+/*
+	Decrypts the given string by bit-wise (reverse)xoring with the given key.
+	Args: 	<char *inp> pointer to a char array representing the ciphertext.
+			<char *key> pointer to a char array representing the encryption key [also known as pad/random pad].	
+	Returns: The decrypted text/original in <char *> format.
+	
+
+*/
+
+char *decryptOTP(char *inp,  char *key)
+{
+	//reserving some space.
+	char *out = (char *)malloc(sizeof(char )*strlen(key) + 1);
+	
+
+	//parse the input, reverse xoring will reveal the secret.
+	for (int i = 0; i < strlen(inp); ++i)
+		*(out + i) = (char)(*(key + i))^(*(inp + i));
+	
+
+		
+	//manually appending terminating char.
+	*(out + strlen(key)) = '\0';
+
+	return out; 
+
+}
+
 
