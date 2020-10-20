@@ -1,8 +1,13 @@
- #include <stdlib.h>
- #include <stdio.h>
- #include <string.h>
- #include <ctype.h>
- #include <math.h>
+ 
+
+#ifndef crypto_h
+#define crypto_h
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <math.h>
 #include <fcntl.h> 
 #include <unistd.h>
 
@@ -89,7 +94,6 @@ char *formatInput(char *inp);
 
 */
 
-
 char *readInput();
 
 
@@ -106,3 +110,6 @@ char *encryptCeasar(char *inp, int k);
 char *decryptCeasar(char *inp, int k);
 char *encryptVigenere(char *inp, char *key);
 char *decryptVigenere(char *inp, char *key);
+
+
+#endif

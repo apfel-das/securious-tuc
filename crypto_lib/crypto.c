@@ -1,90 +1,6 @@
 #include "crypto.h"
 
 
-int main()
-{
-
-	char *plain = NULL;
-	char *key = NULL;
-	char *enc = NULL;
-	char *orig = NULL;
-	char *some = NULL;
-	int k;
-	
-
-	/*
-		One-Time-Pad.
-	
-
-	
-	printf("[OTP] input: ");
-	plain = formatInput(readInput());
-	
-   	key = getRandomKey(strlen(plain));
-   	
-   	enc = encryptOTP(plain, key);
-
-   	printf("[OTP] encrypted: ");
-   	printHex(enc);
-
-   	orig = decryptOTP(enc, key);
-   	printf("[OTP] decrypted: %s\n", orig);
-
-   	//free some of the resources..
-
-   	free(plain);
-   	free(key);
-   	free(orig);
-	
-   
-
-   	/*
-		
-		Ceasar's Algo.
-	
-   	
-   	printf("[Ceasars] input: ");
-   	plain = formatInput(readInput());
-
-   	printf("[Ceasars] key: ");
-   	scanf("%d", &k);
-
-   	poolInit();
-
-   	enc = encryptCeasar(plain,k);
-   	printf("[Ceasars] encrypted: %s\n", enc);
-
-   	orig = decryptCeasar(enc, k);
-   	printf("[Ceasars] decrypted: %s\n", orig);
-   	
-
-   	
-
-   	/*
-   		Vigenere Algo.
-   	
-   	*/
-   		
-   	printf("[Vigenere] input: ");
-   	plain = formatInput(readInput());
-
-   	printf("[Vigenere] key: ");
-   	key = extendKey(plain,formatInput(readInput()));
-
-   	enc = encryptVigenere(plain, key);
-   	printf("[Vigenere] encrypted: %s\n", enc);
-
-   	orig = decryptVigenere(enc, key);
-   	printf("[Vigenere] decrypted: %s\n", orig);
-
-
-  
-
-   	
-	
-
-	return 0;
-}
 /*
 
 	** Initializers **
@@ -272,7 +188,7 @@ char *getRandomKey(int siz)
 	//manually terminate
 	*(key + siz) = '\0';
 
-	printf("%s\n",key );
+	
 	return key;
 
 	
@@ -338,17 +254,21 @@ char *readInput()
 	unsigned int actualLength = 0;
 	char *inp = (char *)malloc(sizeof(char )*BUF_SIZE+1);
 
-	//uncertainity is my mother..
-	fflush(stdin);
+
 
 
 	//the current character in stdin.
 	char curr = getchar();
 
+	//avoid reading junks at start.
+	while(curr < 32)
+		curr = getchar();
+
 
 	//parse STDIN character-wise until newline is reached.
 	while(curr != '\n')
 	{
+		
 		//if limits are reached, reallocation must happen.
 		if(actualLength >= BUF_SIZE)
 			inp = realloc(inp, (actualLength + 10) * sizeof(char));
@@ -608,4 +528,6 @@ char *decryptVigenere(char *inp, char *key)
 
 	return out;
 }
+
+
 
