@@ -60,7 +60,7 @@ void vPoolInit();
 int getPoolIndex(char c);
 int getCapsIndex(char c);
 char getRandomDigit();
-uint8_t *getRandomKey(int siz);
+char *getRandomKey(int siz);
 void printHex(char *key);
 
 /*
@@ -74,11 +74,10 @@ void printHex(char *key);
 	Receives a string with possibly invalid characters ['$', '@', '\tab', etc..] and purifies it to the form [0-9A-Za-z].
 
 	Args:	< *inp >:	pointer to original string.
-			< *out >:	pointer to output.
 	Returns: NULL if inp is NULL, the purified string in any other case.
 
 */
-char *formatInput(char *inp, char *out);
+char *formatInput(char *inp);
 
 /*
 	Reads any given input (from stdin) dynamically by resizing the input buffer when needed.
@@ -103,3 +102,4 @@ char *readInput();
 
 char *encryptOTP(char *inp,  char *key);
 char *decryptOTP(char *inp, char *key);
+char *encryptCeasar(char *inp, int k);

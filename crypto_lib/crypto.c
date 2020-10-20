@@ -5,21 +5,33 @@ int main()
 {
 
 	char *cipher = NULL;
-	uint8_t *key = NULL;
+	char *key = NULL;
 	char *enc = NULL;
 	char *orig = NULL;
-
-	printf("Hello crypto-curious..\n");
+	char *some = NULL;
 	
+	/*
+		One-Time-Pad.
+	*/
 
-	printf("plaintext: ");
+	printf("[OTP] input: ");
 	cipher = readInput();
-	cipher = formatInput(cipher, enc);
-	printHex(cipher);
+	cipher = formatInput(cipher);
+
+	printf("First %ld\n",strlen(cipher));
+
 	
    	key = getRandomKey(strlen(cipher));
 
-   	poolInit();
+   	some = readInput();
+
+   	printf("2nd: %ld %s\n",strlen(some), some);
+
+	some = formatInput(some);
+
+	printf("3rd: %ld %s\n",strlen(some), some);
+
+   	
    	enc = encryptOTP(cipher, key);
 
    	printf("[OTP] encrypted: ");
@@ -28,7 +40,12 @@ int main()
    	orig = decryptOTP(enc, key);
    	printf("[OTP] decrypted: %s\n", orig);
 
+   
 
+   
+  
+
+   	
 	
 
 	return 0;
@@ -171,7 +188,7 @@ char getRandomDigit()
 	Contructs a pseudo-random key of <siz> bytes.
 	
 */
-uint8_t *getRandomKey(int siz)
+char *getRandomKey(int siz)
 {
 	uint8_t *key = (uint8_t *)malloc(siz);
 
@@ -180,6 +197,9 @@ uint8_t *getRandomKey(int siz)
 	{
 		*(key +i) = getRandomDigit();
 	}
+
+	//manually terminate
+	*(key + siz) = '\0';
 
 	printf("%s\n",key );
 	return key;
@@ -192,7 +212,7 @@ uint8_t *getRandomKey(int siz)
 	Formats a string in order to preserve ONLY 0-9, A-Z , a-z.
 	More "crypto.h"
 */
-char *formatInput(char *inp, char *out)
+char *formatInput(char *inp)
 {
 	//assume dummies will handle the code.
 	if(!inp)
@@ -206,7 +226,7 @@ char *formatInput(char *inp, char *out)
 	
 	//reserve some space.
 	
-	out = (char *)malloc(sizeof(char)*strlen(inp)+1);
+	char *out = (char *)malloc(sizeof(char)*strlen(inp)+1);
 	
 	//parse the input.
 	while(posIn < strlen(inp))
@@ -261,6 +281,9 @@ char *readInput()
 		
 
 	}
+
+	//manually terminating is of TOP importance here.
+	*(inp + actualLength) = '\0';
 
 	//not much for error handling but at least there's is one..
 	if(!inp)
@@ -344,6 +367,26 @@ char *decryptOTP(char *inp,  char *key)
 	*(out + strlen(key)) = '\0';
 
 	return out; 
+
+}
+
+char *encryptCeasar(char *inp, int k)
+{
+
+	//allocating some space.
+	char *out = (char *)malloc(sizeof(char )*strlen(inp) + 1);
+	
+	//parsing input byte-wise.
+	for (int i = 0; i < strlen(inp); i++)
+	{
+		if(isdigit(*(inp + i)))
+		{
+			*(out + i) = *(inp + i) + k%10;
+			printf("In it..\n");
+		}
+	}
+
+
 
 }
 
