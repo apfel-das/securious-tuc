@@ -4,7 +4,7 @@
 int main()
 {
 
-	char *cipher = NULL;
+	char *plain = NULL;
 	char *key = NULL;
 	char *enc = NULL;
 	char *orig = NULL;
@@ -15,24 +15,11 @@ int main()
 	*/
 
 	printf("[OTP] input: ");
-	cipher = readInput();
-	cipher = formatInput(cipher);
-
-	printf("First %ld\n",strlen(cipher));
-
-	
-   	key = getRandomKey(strlen(cipher));
-
-   	some = readInput();
-
-   	printf("2nd: %ld %s\n",strlen(some), some);
-
-	some = formatInput(some);
-
-	printf("3rd: %ld %s\n",strlen(some), some);
-
+	plain = readInput();
+	plain = formatInput(plain);
+   	key = getRandomKey(strlen(plain));
    	
-   	enc = encryptOTP(cipher, key);
+   	enc = encryptOTP(plain, key);
 
    	printf("[OTP] encrypted: ");
    	printHex(enc);
@@ -40,7 +27,15 @@ int main()
    	orig = decryptOTP(enc, key);
    	printf("[OTP] decrypted: %s\n", orig);
 
-   
+
+   	/*
+		
+		Ceasar's Algo.
+	
+   	*/
+   	printf("[Ceasars] input: ");
+   	plain = formatInput(readInput());
+
 
    
   
@@ -284,6 +279,7 @@ char *readInput()
 
 	//manually terminating is of TOP importance here.
 	*(inp + actualLength) = '\0';
+
 
 	//not much for error handling but at least there's is one..
 	if(!inp)
