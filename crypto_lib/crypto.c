@@ -185,7 +185,7 @@ char getRandomDigit()
 */
 char *getRandomKey(int siz)
 {
-	uint8_t *key = (uint8_t *)malloc(siz);
+	char *key = (char *)malloc(siz + 1);
 
 	//parse and create.
 	for (int i = 0; i < siz; i++)
@@ -231,6 +231,7 @@ char *formatInput(char *inp)
 		{	
 			*(out + posOut) = *(inp + posIn);
 			posOut++;
+			
 		}
 		posIn++;
 
@@ -238,6 +239,8 @@ char *formatInput(char *inp)
 
 	//manually terminate string.
 	*(out + posOut) = '\0';
+
+	printf("In func: %s\n", out);
 
 	return out;
 
@@ -312,6 +315,8 @@ char *readInput()
 
 char *encryptOTP(char *inp,  char *key)
 {
+
+	
 	//reserving some space.
 	char *out = (char *)malloc(sizeof(char )*strlen(key) + 1);
 	
@@ -330,8 +335,9 @@ char *encryptOTP(char *inp,  char *key)
 
 	}
 
+	
 	//manually appending terminating char.
-	*(out + strlen(key)) = '\0';
+	*(out + strlen(inp)) = '\0';
 
 	return out; 
 	
@@ -359,8 +365,9 @@ char *decryptOTP(char *inp,  char *key)
 	
 
 		
+
 	//manually appending terminating char.
-	*(out + strlen(key)) = '\0';
+	*(out + strlen(inp)) = '\0';
 
 	return out; 
 
