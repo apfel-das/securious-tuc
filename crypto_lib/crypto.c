@@ -9,14 +9,17 @@ int main()
 	char *enc = NULL;
 	char *orig = NULL;
 	char *some = NULL;
+	int k;
 	
+
 	/*
 		One-Time-Pad.
-	*/
+	
 
+	
 	printf("[OTP] input: ");
-	plain = readInput();
-	plain = formatInput(plain);
+	plain = formatInput(readInput());
+	
    	key = getRandomKey(strlen(plain));
    	
    	enc = encryptOTP(plain, key);
@@ -27,17 +30,54 @@ int main()
    	orig = decryptOTP(enc, key);
    	printf("[OTP] decrypted: %s\n", orig);
 
+   	//free some of the resources..
+
+   	free(plain);
+   	free(key);
+   	free(orig);
+	
+   
 
    	/*
 		
 		Ceasar's Algo.
 	
-   	*/
+   	
    	printf("[Ceasars] input: ");
    	plain = formatInput(readInput());
 
+   	printf("[Ceasars] key: ");
+   	scanf("%d", &k);
 
-   
+   	poolInit();
+
+   	enc = encryptCeasar(plain,k);
+   	printf("[Ceasars] encrypted: %s\n", enc);
+
+   	orig = decryptCeasar(enc, k);
+   	printf("[Ceasars] decrypted: %s\n", orig);
+   	
+
+   	
+
+   	/*
+   		Vigenere Algo.
+   	
+   	*/
+   		
+   	printf("[Vigenere] input: ");
+   	plain = formatInput(readInput());
+
+   	printf("[Vigenere] key: ");
+   	key = extendKey(plain,formatInput(readInput()));
+
+   	enc = encryptVigenere(plain, key);
+   	printf("[Vigenere] encrypted: %s\n", enc);
+
+   	orig = decryptVigenere(enc, key);
+   	printf("[Vigenere] decrypted: %s\n", orig);
+
+
   
 
    	
@@ -61,20 +101,56 @@ int main()
 
 void poolInit()
 {
-	int initIndex = 65;  // 65 (dec) -> A (char)
+	int initIndex = 48;  // 48 (dec) -> 0 (char)
 
 	//initializing caps, 2*26 letters to assign + 10 numbers.
 	for (int i = 0; i < POOL_SIZE; i++)
 	{
-		if(i < 26)				
-			charPool[i] = initIndex + i;	  // initializing capitals 	
-		else if(i < 52)
-			charPool[i] = initIndex + (i%26) + 32; // a-A = 32, initializing small letters
+		if(i < 10)				
+			charPool[i] = initIndex + i;	  // initializing numbers
+		else if(i < 36)
+			charPool[i] = initIndex + i + 7;  // capitals
 		else
-			charPool[i] = i % 52;	// numbers in ASCII decimal			
+			charPool[i] = initIndex + i + 13; // small	
+		
 	}
 
+	
 
+}
+
+/*
+
+	Generates an extended version of the original key to match length of plaintext.
+	Input:		<char *orig>: The plaintext.
+				<char *key>:  The key.
+	Returns: 	The expanded key in a <char *>.
+	Warning:
+
+*/
+
+char *extendKey(char *orig, char *key)
+{
+	
+
+	//allocate some space.
+	char *out = (char *)malloc(sizeof(char)*strlen(orig) + 1);
+	
+	//key's length is fine.
+	if(strlen(key) >= strlen(orig))
+		return key;
+	
+	//we need to expand the key by repetition.
+	for(int i =0; i < strlen(orig); i++)
+	{
+		*(out + i) = *(key + i%strlen(key));
+		
+	}
+
+	*(out + strlen(orig)) = '\0';
+
+
+	return out;
 }
 
 /*
@@ -239,9 +315,8 @@ char *formatInput(char *inp)
 
 	//manually terminate string.
 	*(out + posOut) = '\0';
-
-	printf("In func: %s\n", out);
-
+	
+	
 	return out;
 
 
@@ -261,30 +336,36 @@ char *readInput()
 {
 	//allocating a fixed length buffer and a ctr to keep track of the string's size.
 	unsigned int actualLength = 0;
-	char *inp = (char *)malloc(sizeof(char )*BUF_SIZE);
+	char *inp = (char *)malloc(sizeof(char )*BUF_SIZE+1);
 
-	//the current character.
-	char curr;
-	
+	//uncertainity is my mother..
+	fflush(stdin);
+
+
+	//the current character in stdin.
+	char curr = getchar();
+
+
 	//parse STDIN character-wise until newline is reached.
-	while((curr = getchar()) != '\n')
+	while(curr != '\n')
 	{
 		//if limits are reached, reallocation must happen.
 		if(actualLength >= BUF_SIZE)
-			inp = realloc(inp, (actualLength + 1) * sizeof(char));
+			inp = realloc(inp, (actualLength + 10) * sizeof(char));
 
 		//increment counter and store		
 		inp[actualLength] = curr;
 		actualLength++;
-		
+
+		//read again.
+		curr = getchar();
 
 	}
 
 	//manually terminating is of TOP importance here.
 	*(inp + actualLength) = '\0';
 
-
-	//not much for error handling but at least there's is one..
+	//not much of error handling but at least there's is one..
 	if(!inp)
 		return NULL;
 	return inp;
@@ -373,24 +454,158 @@ char *decryptOTP(char *inp,  char *key)
 
 }
 
+
+/*
+	Encrypts the given string with Ceasar method via shifting on the alphabet <key> times.
+	Args: 	<char *inp> pointer to a char array representing the actual plaintext.
+			<int key>   number of shifts.	
+	Returns: The encrypted text/ciphertext in <char *> format.
+	Warning: The alphabet used is constant in space [0-9A-Za-z]
+
+*/
+
 char *encryptCeasar(char *inp, int k)
 {
 
 	//allocating some space.
 	char *out = (char *)malloc(sizeof(char )*strlen(inp) + 1);
+
 	
 	//parsing input byte-wise.
 	for (int i = 0; i < strlen(inp); i++)
 	{
-		if(isdigit(*(inp + i)))
-		{
-			*(out + i) = *(inp + i) + k%10;
-			printf("In it..\n");
-		}
+			// get the adjacent index in Ceasar's cube.
+			unsigned int adjIndex = getPoolIndex(inp[i]) + k;
+
+			// adjust bounds if needed.
+			if(adjIndex >= POOL_SIZE)
+				adjIndex = adjIndex%POOL_SIZE;
+
+			//append 
+			*(out + i) = *(charPool + adjIndex);
 	}
 
+	//manually terminate string.
+	*(out + strlen(inp)) = '\0';
 
+
+
+	return out;
 
 }
 
+
+/*
+	Decrypts the given string with Ceasar method via shifting on the alphabet <key> times.
+	Args: 	<char *inp> pointer to a char array representing the ciphertext.
+			<int key>   number of shifts.	
+	Returns: The decrypted text/original <char *> format.
+	Warning: The alphabet used is constant in space [0-9A-Za-z]
+
+*/
+
+
+
+char *decryptCeasar(char *inp, int k)
+{
+
+	//allocating some space.
+	char *out = (char *)malloc(sizeof(char )*strlen(inp) + 1);
+
+
+	
+	//parsing input byte-wise.
+	for (int i = 0; i < strlen(inp); i++)
+	{
+			// get the adjacent index in Ceasar's cube.
+			int adjIndex = getPoolIndex(inp[i]) - k;
+		
+			
+			// adjust bounds if needed.
+			while(adjIndex < 0)
+				adjIndex = adjIndex + POOL_SIZE;
+
+			
+			//append 
+			*(out + i) = *(charPool + adjIndex);
+	}
+
+	//manually terminate string.
+	*(out + strlen(inp)) = '\0';
+
+
+
+	return out;
+
+}
+
+
+/*
+	Encrypts the given string with Vigenere method via modulo sums.
+	Args: 	<char *inp> pointer to a char array representing the actual plaintext.
+			<char *key> the key used for encryption.	
+	Returns: The encrypted text/ciphertext in <char *> format.
+	Warning: The alphabet used is ONLY CAPITALS [A-Z]
+	Tipp:	 You migh want to extend the key at first via extendKey().
+
+*/
+
+char *encryptVigenere(char *inp, char *key)
+{
+	//allocate some space.
+	char *out = (char *)malloc(sizeof(char )*strlen(inp) + 1);
+
+	//parse the input bytewise.
+	for (int i = 0; i < strlen(inp); i++)
+	{
+		//convert in range 0-25 and transfer to ASCII capital indexes [+65]
+		unsigned int off = (*(inp + i) + *(key + i))%26 + 65;
+
+		//append.
+		*(out + i) = (char )off;
+
+
+
+	}
+
+	//manually terminate.
+	*(out + strlen(inp)) = '\0';
+
+	return out;
+}
+
+
+/*
+	Decrypts the given string with Vigenere method via modulo sums.
+	Args: 	<char *inp> pointer to a char array representing the ciphertext.
+			<char *key> the key used for encryption.	
+	Returns: The decrypted text/plairtext in <char *> format.
+	Warning: The alphabet used is ONLY CAPITALS [A-Z]
+
+*/
+
+char *decryptVigenere(char *inp, char *key)
+{
+	//allocate some space.
+	char *out = (char *)malloc(sizeof(char )*strlen(inp) + 1);
+
+	//parse the input bytewise.
+	for (int i = 0; i < strlen(inp); i++)
+	{
+		//convert in range 0-25 and transfer to ASCII capital indexes [+65]
+		unsigned int off = (*(inp + i) - *(key + i) + 26)%26 + 65;
+
+
+		//append.
+		*(out + i) = (char )off;
+
+
+
+	}
+
+	//manually terminate.
+	*(out + strlen(inp)) = '\0';
+
+	return out;
+}
 

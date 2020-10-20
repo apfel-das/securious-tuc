@@ -24,7 +24,6 @@ typedef u_int8_t uint8_t;
 #endif
 
 
-#define MAX_ENTROPY 20
 #define POOL_SIZE 62 //actual size of the character pool [26 capitals, 26 small, 10 numbers [0-9]]
 #define ALPHA_POOL_SIZE 26
 
@@ -62,6 +61,7 @@ int getCapsIndex(char c);
 char getRandomDigit();
 char *getRandomKey(int siz);
 void printHex(char *key);
+char *extendKey(char *orig, char *key);
 
 /*
 	** Input handlers **
@@ -103,3 +103,6 @@ char *readInput();
 char *encryptOTP(char *inp,  char *key);
 char *decryptOTP(char *inp, char *key);
 char *encryptCeasar(char *inp, int k);
+char *decryptCeasar(char *inp, int k);
+char *encryptVigenere(char *inp, char *key);
+char *decryptVigenere(char *inp, char *key);
