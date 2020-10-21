@@ -261,12 +261,12 @@ char *readInput()
 	char curr = getchar();
 
 	//avoid reading junks at start.
-	while(curr < 32)
+	while(curr < 32 || curr > 125)
 		curr = getchar();
 
 
 	//parse STDIN character-wise until newline is reached.
-	while(curr != '\n')
+	while(curr != '\n' && curr != EOF)
 	{
 		
 		//if limits are reached, reallocation must happen.
