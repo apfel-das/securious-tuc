@@ -1,4 +1,4 @@
-#include "crypto.h"
+#include "simple_crypto.h"
 
 
 
@@ -91,7 +91,13 @@ int main()
    	printf("[Vigenere] decrypted: %s\n", orig);
 
 
-  
+  	//free up some resources.
+
+  	free(orig);
+  	free(key);
+  	free(plain);
+  	free(plainV);
+  	free(enc);
 
    	
 	
