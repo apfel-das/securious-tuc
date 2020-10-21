@@ -1,4 +1,4 @@
-#include "simple_crypto.h"
+#include "crypto.h"
 
 
 
@@ -6,7 +6,6 @@ int main()
 {
 
 	char *plain = NULL;
-	char buf[256];
 	char *plainV = NULL;
 	char *key = NULL;
 	char *enc = NULL;
