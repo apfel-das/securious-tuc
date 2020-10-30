@@ -9,6 +9,7 @@
 #include <openssl/cmac.h>
 
 #define BLOCK_SIZE 16
+#define BUF_SIZ 10*1024
 
 
 /* Utility function prototypes */
@@ -19,7 +20,7 @@ void print_string(unsigned char *, size_t);
 void usage(void);
 void check_args(char *, char *, unsigned char *, int, int);
 unsigned char *readFile(char *fPath, unsigned long *len);
-void writeFile(char *fPath, unsigned char *data, unsigned long *len);
+void writeFile(char *fPath, unsigned char *data, unsigned long len, int opt);
 
 /* Actual encryption functions */
 
@@ -187,7 +188,7 @@ void keygen(unsigned char *password, unsigned char *key, unsigned char *iv, int 
 void encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext, int bit_mode)
 {
 
-	printf("%s\n", plaintext);
+	
 	//parameters
 	EVP_CIPHER_CTX *context; 
 	const EVP_CIPHER *cipher;
@@ -234,9 +235,14 @@ void encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key, un
 	//releasing sensitive info from memory.
 	EVP_CIPHER_CTX_free(context);
 
+	//uncomment following block if debugging, testing
+
+/*
 	printf("Done Encrypting..\n");
 	print_hex(ciphertext, (size_t)encryptionLength);
 	print_string(ciphertext, (size_t)encryptionLength);
+
+*/
 
 }
 
@@ -263,7 +269,7 @@ int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, u
 	OPENSSL_assert(EVP_CIPHER_CTX_key_length(context) == (bit_mode % 8));
 
 
-	//init. encryption process and error handling.
+	//init. decryption process and error handling.
 	if(EVP_DecryptInit_ex(context, cipher, NULL, key, iv) == 0)
 	{
 		fprintf(stderr, "Error upon context initialization [Decryption]\n");
@@ -271,7 +277,7 @@ int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, u
 	}
 
 
-	//updating the encryption, error handling as well.
+	//updating the decryption, error handling as well.
 
 	if(!EVP_DecryptUpdate(context, plaintext, &encryptionLength, ciphertext, ciphertext_len))
 	{
@@ -283,11 +289,11 @@ int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, u
 	//update count.
 	plaintext_len = encryptionLength;
 
-	//finalising encryption process with error handling as always.
+	//finalising decryption process with error handling as always.
 	if(!EVP_DecryptFinal_ex(context, plaintext + encryptionLength, &encryptionLength))
 	{
 		EVP_CIPHER_CTX_free(context);
-		fprintf(stderr, "Error upon finalising the encryption process [Decryption]\n");
+		fprintf(stderr, "Error upon finalising the decryption process [Decryption]\n");
 		exit(-1);
 
 
@@ -298,14 +304,16 @@ int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, u
 	//releasing sensitive info from memory.
 	EVP_CIPHER_CTX_free(context);
 
-	printf("Done Decrypting..\n");
-	print_hex(plaintext, (size_t)encryptionLength);
-	print_string(plaintext, (size_t)plaintext_len);
-	printf("%s\n", plaintext);
+	//uncomment following if debugging.
+	/*
 	
+	printf("Done Decrypting..\n");
+	print_hex(plaintext, (size_t)plaintext_len);
+	print_string(plaintext, (size_t)plaintext_len);
+	
+	*/
 
-
-
+	//return the actual size of the decrypted text.
 	return plaintext_len;
 }
 
@@ -389,6 +397,7 @@ unsigned char *readFile(char *fPath, unsigned long *len)
 	return data;
 
 
+
 }
 
 
@@ -397,13 +406,15 @@ unsigned char *readFile(char *fPath, unsigned long *len)
 	Writes data in an output file.
 
 */
-void writeFile(char *fPath, unsigned char *data, unsigned long *len)
+void writeFile(char *fPath, unsigned char *data, unsigned long len, int opt)
 {
 
 	//initialise a file pointer;
 	FILE *fp;
 
-	fp = fopen(fPath, "wb");
+	// opt will determine whether bytes or ASCII will be written.
+
+	(opt == 1)? (fp = fopen(fPath, "wb")) : (fp = fopen(fPath, "w"));
 
 	if(!fp)
 	{
@@ -411,8 +422,9 @@ void writeFile(char *fPath, unsigned char *data, unsigned long *len)
 		exit(-1);
 	}
 
-	fwrite(data, 1 ,(size_t)len, fp);
-
+	//write and close file pointer.
+	fwrite(data, sizeof(unsigned char) ,(size_t)len, fp);
+	fclose(fp);
 }
 
 
@@ -531,21 +543,23 @@ int main(int argc, char **argv)
 
 	/* Keygen from password */
 
-	printf("Input:\t%s\n", input);
-
-	printf("Password:%s\n", password);
+	
 	keygen(password, globalKey, iv, bit_mode);
 
+	//Uncomment if debugging, testing..
+	/*
+	printf("Input:\t%s\n", input);
+	printf("Password:%s\n", password);
 	printf("Key:%s Length[bits]: %ld \n", globalKey, strlen((const char *)globalKey)*8);
+		
+	*/
+
 	/* Operate on the data according to the mode */
 
 	switch(op_mode)
 	{
 		case 0:
 
-				printf("About to encrypt..[Debug]\n");
-
-				//strlen(output) = strlen(input) + strlen(padding) + strlen(CMACM)
 				//allocate appropriate space.
 
 				outpLen = inpLen - (inpLen % BLOCK_SIZE) + BLOCK_SIZE;
@@ -554,10 +568,35 @@ int main(int argc, char **argv)
 				//encrypt..
 				encrypt(input, inpLen, globalKey, iv, output, bit_mode);
 
-				printf("Decrypting instantly..[Debug]\n");
+				//uncomment if testing
+				
+				/*
+				
+				printf("Decrypting ..[Debug]\n");
 				outpLen = decrypt(output, outpLen, globalKey, NULL, input, bit_mode);
 
+				*/
+
+				//write output on the specified file as bytes.
+				writeFile(output_file, output, outpLen, 1);
+
 				break;
+		case 1:
+				
+
+				output = (unsigned char *)malloc(BUF_SIZ);
+				outpLen = decrypt(input, inpLen, globalKey, iv, output, bit_mode);
+				
+				//uncomment if testing.
+				/*
+					printf("Msg[Decrypted]: %s\n", output);
+				*/
+
+				//write output as plaintext [ASCII].
+				writeFile(output_file, output, outpLen, 0);
+
+				break;
+
 		default:
 				fprintf(stderr, "Invalid opt_mode..\n");	
 				break;
