@@ -20,7 +20,8 @@ void print_string(unsigned char *, size_t);
 void usage(void);
 void check_args(char *, char *, unsigned char *, int, int);
 unsigned char *readFile(char *fPath, unsigned long *len);
-void writeFile(char *fPath, unsigned char *data, unsigned long len, int opt);
+void writeFile(char *fPath, unsigned char *data, unsigned long len);
+void handleError(void );
 
 /* Actual encryption functions */
 
@@ -32,14 +33,21 @@ int verify_cmac(unsigned char *, unsigned char *);
 
 
 
+/*
+	
+	UTILITY FUNCTIONS.
+	
+*/
 
 
-/* TODO Declare your function prototypes here... */
+/*
+	Prints info concerning an OpenSSL error..
 
-
-
-/* Variables */
-
+*/
+void handleError(void )
+{
+	ERR_print_errors_fp(stderr);
+}
 
 
 /*
@@ -148,7 +156,7 @@ void check_args(char *input_file, char *output_file, unsigned char *password,  i
    Arguments:	
    					<char *password>: A password under which the key gets generated.
    					<char *key>: 	  Points the location in which the generated key gets to be stored.
-   					<char *iv>:
+   					<char *iv>:		  Pointer to an alphabet which randomises the encryption [such as str1 == str2 but key1 != key2].
    					<char *bit_mode>: The actual bits of the AES-ECB to be produced.
    	Notes: 
    					- <char *bit_mode> is guaranteed to be 128 or 256.
@@ -169,16 +177,28 @@ void keygen(unsigned char *password, unsigned char *key, unsigned char *iv, int 
 	//adjustin cipher with respect on bit mode.
 	(bit_mode == 128) ? (cipher = EVP_get_cipherbyname("aes-128-ecb")): (cipher = EVP_get_cipherbyname("aes-256-ecb"));
 
+
+
 	//generating key and error handling.
 
 	if (EVP_BytesToKey(cipher, hash, salt, (unsigned char *)password, strlen((char *)password), 1, key, iv) == 0)
 	{
+		handleError();
 		fprintf(stderr, "Error in key generation..\n");
 		exit(-1);
 	}
 	
+	
 
 }
+
+
+/*
+
+	ENCRYPTION FUNCTIONS.
+
+
+*/
 
 
 /*
@@ -225,6 +245,7 @@ void encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key, un
 	//finalising encryption process with error handling as always.
 	if(!EVP_EncryptFinal_ex(context, ciphertext + encryptionLength, &encryptionLength))
 	{
+		handleError();
 		EVP_CIPHER_CTX_free(context);
 		fprintf(stderr, "Error upon finalising the encryption process [Encryption]\n");
 		exit(-1);
@@ -238,14 +259,6 @@ void encrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key, un
 	//releasing sensitive info from memory.
 	EVP_CIPHER_CTX_free(context);
 
-	//uncomment following block if debugging, testing
-
-/*
-	printf("Done Encrypting..\n");
-	print_hex(ciphertext, (size_t)encryptionLength);
-	print_string(ciphertext, (size_t)encryptionLength);
-
-*/
 
 }
 
@@ -272,6 +285,7 @@ int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, u
 	OPENSSL_assert(EVP_CIPHER_CTX_key_length(context) == (bit_mode % 8));
 
 
+
 	//init. decryption process and error handling.
 	if(EVP_DecryptInit_ex(context, cipher, NULL, key, iv) == 0)
 	{
@@ -293,17 +307,17 @@ int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, u
 	plaintext_len = encryptionLength;
 	
 
-
-
 	//finalising decryption process with error handling as always.
 	if(!EVP_DecryptFinal_ex(context, plaintext + encryptionLength, &encryptionLength))
 	{
+		handleError();
 		EVP_CIPHER_CTX_free(context);
 		fprintf(stderr, "Error upon finalising the decryption process [Decryption]\n");
 		exit(-1);
 
 
 	}
+
 	//finalize length.
 	plaintext_len += encryptionLength;
 
@@ -311,14 +325,6 @@ int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, u
 	//releasing sensitive info from memory.
 	EVP_CIPHER_CTX_free(context);
 
-	//uncomment following if debugging.
-	/*
-	
-	printf("Done Decrypting..\n");
-	print_hex(plaintext, (size_t)plaintext_len);
-	print_string(plaintext, (size_t)plaintext_len);
-	
-	*/
 
 	//return the actual size of the decrypted text.
 	return plaintext_len;
@@ -326,7 +332,7 @@ int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, u
 
 
 /*
- * Generates a CMAC
+ * Generates a CMAC.
  */
 void gen_cmac(unsigned char *data, size_t data_len, unsigned char *key,unsigned char *cmac, int bit_mode)
 {
@@ -340,8 +346,9 @@ void gen_cmac(unsigned char *data, size_t data_len, unsigned char *key,unsigned 
 
 
 	//asjuting cipher with respect on bit mode.
-	(bit_mode == 128) ? (cipher = EVP_get_cipherbyname("aes-128-ecb")): (cipher = EVP_get_cipherbyname("aes-256-ecb"));
+	(bit_mode == 128) ? (cipher = EVP_get_cipherbyname("aes-128-cbc")): (cipher = EVP_get_cipherbyname("aes-256-cbc"));
 
+	//DO NOT FOR NO REASON SELECT ECB AES IF IN TUC OR UOC-CSD, IVE DONE THAT SHIT AND TOOK ME 7 DAYS TO DISCOVER IT.
 
 
 	//initalize with error handling
@@ -359,13 +366,22 @@ void gen_cmac(unsigned char *data, size_t data_len, unsigned char *key,unsigned 
 		exit(-1);
 	}
 
-	//filanize
+
+	/*
+		Finalize.
+		<CMAC_Final()> writes 16 bytes at minimum in case of success, practically that might be 22 or even more.
+		Therefore cmac's size should be restricted.
+
+	*/
 	if(!CMAC_Final(context, cmac, &signLength))
 	{
-		fprintf(stderr, "Error upon data encapsulation [Signing]\n");
+		fprintf(stderr, "Error upon data finalisation [Signing]\n");
 		CMAC_CTX_free(context);
 		exit(-1);
 	}
+
+	//append termination, handle the event of overflow upon initialization, make it printable..
+	*(cmac + BLOCK_SIZE) = '\0';
 
 	//delete sensitive stuff.
 	CMAC_CTX_free(context);
@@ -375,7 +391,7 @@ void gen_cmac(unsigned char *data, size_t data_len, unsigned char *key,unsigned 
 
 
 /*
- * Verifies a CMAC's validity.
+ * Verifies a CMAC's validity, by wrapper check.
  */
 int verify_cmac(unsigned char *cmac1, unsigned char *cmac2)
 {
@@ -404,8 +420,8 @@ int verify_cmac(unsigned char *cmac1, unsigned char *cmac2)
 unsigned char *readFile(char *fPath, unsigned long *len)
 {
 	FILE *fp;
-	int count = 0;
-	size_t retrieved = 0;
+	long fileLen = 0;
+	
 
 	//allocate some space on a buffer.
 	unsigned char *data = (unsigned char *)malloc(sizeof(unsigned char )*BUF_SIZ + 1);
@@ -422,12 +438,30 @@ unsigned char *readFile(char *fPath, unsigned long *len)
 		exit(EXIT_FAILURE);
 	}
 
+	//estimate the length.
+	fseek(fp, 0, SEEK_END);
+
+	//unsafe yet useful for our cause.
+	fileLen = ftell(fp);
+
+	//set on beginning of file.
+	rewind(fp);
+
 	//read the first character.
 	char ch = getc(fp);
 	int charCount = 0;
 
-	while( ch != EOF)
+
+	/*
+
+		Checking for EOF [ch != EOF] will work on normal ASCII files.
+		For reading the encrypted this won't work cause encrypted chars might contain EOF [0xffff] under some OS's.
+		So it is prefered to check for file length via the estimation of ftell() even if ftell() is partially unsafe [especially under Windows].
+
+	*/
+	while(charCount != fileLen)
 	{
+		
 		//re-allocate if needed.
 		if(charCount >= BUF_SIZ)
 			data = realloc(data, (charCount + 1)*sizeof(unsigned char));
@@ -439,10 +473,10 @@ unsigned char *readFile(char *fPath, unsigned long *len)
 		//read next char.
 		ch = getc(fp);
 
+
+
 	}
 	
-	
-
 	//some error handling and then read.
 	if(!data)
 	{
@@ -469,20 +503,24 @@ unsigned char *readFile(char *fPath, unsigned long *len)
 }
 
 
+
+
+
 /*
 	
 	Writes data in an output file.
 
 */
-void writeFile(char *fPath, unsigned char *data, unsigned long len, int opt)
+void writeFile(char *fPath, unsigned char *data, unsigned long len)
 {
 
 	//initialise a file pointer;
 	FILE *fp;
+	
 
 	// opt will determine whether bytes or ASCII will be written.
 
-	(opt == 1)? (fp = fopen(fPath, "wb")) : (fp = fopen(fPath, "w"));
+	fp = fopen(fPath, "wb");
 
 	if(!fp)
 	{
@@ -490,8 +528,9 @@ void writeFile(char *fPath, unsigned char *data, unsigned long len, int opt)
 		exit(-1);
 	}
 
-	//write and close file pointer.
+	///write as a stream and not character wise.
 	fwrite(data, sizeof(unsigned char) ,(size_t)len, fp);
+
 	fclose(fp);
 }
 
@@ -527,16 +566,16 @@ int main(int argc, char **argv)
 	unsigned char *output = NULL;
 	unsigned long inpLen = 0;
 	unsigned long outpLen = 0;
-	unsigned char *tmp;
+
 
 
 
 	unsigned char globalKey[256];
-	unsigned char iv[256];
-	unsigned char *plaintext;
+	unsigned char iv[256]; //this can be filled with a random pool.
 	unsigned char *ciphertext;
 	unsigned char *origCMAC;
-	unsigned char *tmpCMAC;
+	unsigned char *givenCMAC;
+	unsigned char *tmp;
 
 
 
@@ -609,7 +648,7 @@ int main(int argc, char **argv)
 	if(!input)
 	{
 		fprintf(stderr, "Empty data set given, exiting now..\n");
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 	
 
@@ -628,19 +667,20 @@ int main(int argc, char **argv)
 	
 	keygen(password, globalKey, iv, bit_mode);
 
-	//Uncomment if debugging, testing..
-	/*
-	printf("Input:\t%s\n", input);
-	printf("Password:%s\n", password);
-	printf("Key:%s Length[bits]: %ld \n", globalKey, strlen((const char *)globalKey)*8);
-		
-	*/
 
 	/* Operate on the data according to the mode */
 
 	switch(op_mode)
 	{
 		case 0:
+
+
+				/*
+					Encrypt then write on file specified.	
+				
+				*/
+
+
 
 				//allocate appropriate space.
 
@@ -649,106 +689,146 @@ int main(int argc, char **argv)
 
 				//encrypt..
 				encrypt(input, inpLen, globalKey, iv, output, bit_mode);
-
-
-				//uncomment if testing
 				
-				/*
-
-				printf("Decrypting ..[Debug]\n");
-				outpLen = decrypt(output, outpLen, globalKey, NULL, input, bit_mode);
-
-				*/
+				
 
 				//write output on the specified file as bytes.
-				writeFile(output_file, output, outpLen, 0);
+				writeFile(output_file, output, outpLen);
 
 				break;
 		case 1:
 				
-
-				output = (unsigned char *)malloc(BUF_SIZ);
-				outpLen = decrypt(input, inpLen, globalKey, iv, output, bit_mode);
-				
-				//uncomment if testing.
 				/*
-					printf("Msg[Decrypted]: %s\n", output);
+					Decrypt then write on file specified.
+					Will not work if encrypted msg has a CMAC sign.	
+				
 				*/
 
+				outpLen = inpLen - (inpLen % BLOCK_SIZE) + BLOCK_SIZE;
+				output = (unsigned char *)malloc(outpLen);
+				outpLen = decrypt(input, inpLen, globalKey, iv, output, bit_mode);
+			
+
 				//write output as plaintext [ASCII].
-				writeFile(output_file, output, outpLen, 0);
+				writeFile(output_file, output, outpLen);
 
 				break;
 
 		case 2:
-				outpLen = inpLen - (inpLen % BLOCK_SIZE) +2*BLOCK_SIZE;
-				output = (unsigned char *)malloc(outpLen);
 
-				encrypt(input, inpLen, globalKey, iv, output, bit_mode);
-				gen_cmac(input, inpLen, globalKey, output + (outpLen - BLOCK_SIZE), bit_mode);
+				/*
+					Encrypt then sign with a 16-byte cmac.
+					Write on file specified.
 
-
-				break;
-
-		case 3:
+				*/
 				
-				tmp = (unsigned char *)malloc(BLOCK_SIZE);
-				output = (unsigned char *)malloc(inpLen);
-				outpLen = decrypt(input, inpLen - BLOCK_SIZE, globalKey, iv, output, bit_mode);
-				
-				gen_cmac(output, outpLen, globalKey, tmp, bit_mode);
-
-				if(!verify_cmac(tmp, (input + inpLen - BLOCK_SIZE)))
-					printf("Unable to verify\n");
-				else
-					printf("Verified\n");
-
-				
-				break;
-
-		case 4:
-				printf("Debugging..\n");
-				printf("\n-------------------------------------------------------\n");	
-
-				
-				//allocate appropriate space.
-
 				outpLen = inpLen - (inpLen % BLOCK_SIZE) + BLOCK_SIZE;
 				output = (unsigned char *)malloc(outpLen);
 
-				//encrypting..
-				encrypt(input, inpLen, globalKey, iv, output, bit_mode);
+				//encrypting input..
+				encrypt(input, strlen((const char *)input), globalKey, iv, output, bit_mode);
 
-				//allocating space.
-				ciphertext = (unsigned char *)malloc(strlen((const char *)output));
-				
-				//copying..
-				memcpy(ciphertext, output, strlen((const char *)output));
 
-				//print info
-				printf("Key [string]: %s", globalKey);
-				printf("Key [hex]:");
-				print_hex(globalKey, strlen((const char *)globalKey));;
-				printf("\n-------------------------------------------------------\n");	
-				printf("Encrypted msg [string]:\n");
-				print_string(ciphertext, strlen((const char *)ciphertext));
-				printf("Encrypted msg [hex]:\n");
-				print_hex(ciphertext, strlen((const char *)ciphertext));
-
-				//decrypting.
+				//allocating space for both encryted and cmac.
+				ciphertext = (unsigned char *)malloc(strlen((const char *)output) + BLOCK_SIZE);
 
 				
-				outpLen = decrypt(output, outpLen, globalKey, NULL, input, bit_mode);
-				print_string(input, inpLen);
+				//copying encrypted..
+				memcpy(ciphertext, output, outpLen);
 
+				
+				//allocating space for cmac [BLOCK_SIZE = 16 bytes] + 1 for terminating character.			
+				tmp = (unsigned char *)malloc(sizeof(unsigned char )*BLOCK_SIZE + 1);
+
+
+				/*
+
+					Generating the cmac.
+					What took me days to understand is that the CMAC gets generated upon the original/non-ecrypted msg and NOT the encrypted.
+					<strlen()> will work here since it has to do with ASCII text.
+
+
+				*/
+				gen_cmac(input, strlen((const char *)input), globalKey, tmp, bit_mode);
+				
+
+				//copying cmac on stream..
+
+				memcpy(ciphertext + strlen((const char *)output), tmp, BLOCK_SIZE);
+
+				
+				//writing stream on file.
+				writeFile(output_file, ciphertext, strlen((const char *)ciphertext));
+			
 			
 
-				printf("Cool\n");
+				// free up resources..
+
+				free(ciphertext);
+				free(tmp);
+
+
+				
+				break;
+
+		case 3:
+
+				/*
+					Decrypting then veryfing the CMAC sign by checking the wrappers.
+					
+				*/
 
 				
 
-				free(ciphertext);
-					printf("Cool\n");
+				
+				//calculating space for input..
+				outpLen = inpLen - (inpLen % BLOCK_SIZE) + BLOCK_SIZE;
+				output = (unsigned char *)malloc(outpLen);
+				
+				//decrypt ciphertext only.
+				outpLen = decrypt(input, inpLen - BLOCK_SIZE, globalKey, iv, output, bit_mode);
+				
+				//make it printable and compatitible with strlen()..
+				*(output + outpLen) = '\0';
+
+
+				
+				//allocating space, copying the CMAC from input.
+				givenCMAC = (unsigned char *)malloc(BLOCK_SIZE);
+				memcpy(givenCMAC, input + inpLen - BLOCK_SIZE, BLOCK_SIZE);
+
+				//hey we need it to be printable, I dont like hex..
+				*(givenCMAC + BLOCK_SIZE) = '\0';
+
+
+				
+				//generate our own CMAC to compare with given.
+
+				origCMAC = (unsigned char *)malloc(BLOCK_SIZE);
+
+				gen_cmac(output,strlen((const char *)output),globalKey, origCMAC, bit_mode);
+
+				
+				//remove comment block if testing.
+				/*
+
+
+				printf("%s\n", origCMAC);
+				printf("%s\n", givenCMAC);
+
+				*/
+
+
+				//check cmacs and prompt user...
+				if(!verify_cmac(origCMAC, givenCMAC))
+					printf("Unable to verify given message..\n");
+				else
+				{
+					printf("Message verified, writing decrypted on file now..\n");
+					writeFile(output_file, output, outpLen);
+				}
+
+
 				
 				break;
 
@@ -762,8 +842,8 @@ int main(int argc, char **argv)
 
 
 
-
-
+     
+    
 		
 
 	/* Clean up */
