@@ -5,10 +5,10 @@ Written and developed at Winter Semester 2020.
 * crypto_lib:
   * Simple crypto algorithms implementation (One-Time-Pad, Ceasar, Vigenere) in C.
 * encryptor:
-  * A simple encryptor, decryptor of texts using OpenSSL in C11.
+  * A simple encryptor, decryptor of texts using OpenSSL in C.
 
 * encrypt_lib:
-  * A simple RSA encryptor, decryptor implemented from scratch.
+  * A simple RSA encryptor, decryptor implemented from scratch in C.
 
 
 
