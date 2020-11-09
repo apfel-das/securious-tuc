@@ -7,6 +7,9 @@ Written and developed at Winter Semester 2020.
 * encryptor:
   * A simple encryptor, decryptor of texts using OpenSSL in C11.
 
+* encrypt_lib:
+  * A simple RSA encryptor, decryptor implemented from scratch.
+
 
 
 ### Repo will be public since 6/11/20 [please do not raw copy pasting..]
