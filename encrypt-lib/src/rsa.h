@@ -7,6 +7,7 @@
 #include <time.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <math.h>
 
 # define RSA_SIEVE_LIMIT 255
 
@@ -19,8 +20,10 @@
  *
  * ret:  The prime numbers that are less or equal to the limit
  */
-size_t *
-sieve_of_eratosthenes(int, int *);
+size_t *sieve_of_eratosthenes(int, int *);
+
+
+
 
 
 /*
@@ -31,8 +34,7 @@ sieve_of_eratosthenes(int, int *);
  *
  * ret: the GCD
  */
-int
-gcd(int , int);
+int gcd(int , int);
 
 
 /*
@@ -43,8 +45,7 @@ gcd(int , int);
  *
  * ret: 'e'
  */
-size_t
-choose_e(size_t);
+size_t choose_e(size_t fi_n, size_t *primePool, int poolSize);
 
 
 /*
@@ -55,16 +56,26 @@ choose_e(size_t);
  *
  * ret: modular inverse
  */
-size_t
-mod_inverse(size_t, size_t);
+size_t mod_inverse(size_t, size_t);
+
+/*
+ * Calculates the modular exponentation b^exp mod m.
+ *
+ * arg0: base
+ * arg1: exponent
+ * arg2: modulo reductant.
+ *
+ * ret: modular exponentiation
+ */
+
+size_t mod_expo(size_t b, size_t exp, size_t m);
 
 
 /*
  * Generates an RSA key pair and saves
  * each key in a different file
  */
-void
-rsa_keygen(void);
+void rsa_keygen(void);
 
 
 /*
@@ -74,8 +85,7 @@ rsa_keygen(void);
  * arg1: path to output file
  * arg2: path to key file
  */
-void
-rsa_encrypt(char *, char *, char *);
+void rsa_encrypt(char *, char *, char *);
 
 
 /*
@@ -85,7 +95,6 @@ rsa_encrypt(char *, char *, char *);
  * arg1: path to output file
  * arg2: path to key file
  */
-void
-rsa_decrypt(char *, char *, char *);
+void rsa_decrypt(char *, char *, char *);
 
 #endif /* _RSA_H */

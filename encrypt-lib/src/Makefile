@@ -9,7 +9,7 @@ TARGET = encrypt_lib
 all: $(TARGET)
 
 $(TARGET): $(OBJFILES)
-	$(CC) $(CFLAGS) $(DBG) -o $(TARGET) $(OBJFILES)
+	$(CC) $(CFLAGS) $(DBG) -o $(TARGET) $(OBJFILES) -lm
 
 clean:
 	rm -f $(TARGET) *.o
