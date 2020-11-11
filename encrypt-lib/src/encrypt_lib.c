@@ -86,9 +86,8 @@ int main(int argc, char **argv)
 		break;
 	case 3:
 		printf("Debug mode..Call functions here for testing\n");
-		size_t res = mod_expo(3,2048,7);
-		printf("Result: %ld\n", res);
-
+		
+		rsa_keygen();
 		
 		
 		break;	

@@ -9,7 +9,8 @@
 #include <unistd.h>
 #include <math.h>
 
-# define RSA_SIEVE_LIMIT 255
+#define RSA_SIEVE_LIMIT 255
+#define BASE_SIZ sizeof(size_t)
 
 /*
  * Sieve of Eratosthenes Algorithm
@@ -21,10 +22,6 @@
  * ret:  The prime numbers that are less or equal to the limit
  */
 size_t *sieve_of_eratosthenes(int, int *);
-
-
-
-
 
 /*
  * Greatest Common Denominator
@@ -96,5 +93,13 @@ void rsa_encrypt(char *, char *, char *);
  * arg2: path to key file
  */
 void rsa_decrypt(char *, char *, char *);
+
+
+
+size_t *encrypt(unsigned char *plaintext, unsigned long len, size_t n, size_t d);
+unsigned char *decrypt(size_t *cipher, unsigned long len, size_t n, size_t e);
+
+
+
 
 #endif /* _RSA_H */

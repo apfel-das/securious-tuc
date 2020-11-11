@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 
 
 /*
@@ -11,8 +13,7 @@
  * arg0: data
  * arg1: data len
  */
-void
-print_hex(unsigned char *, size_t);
+void print_hex(unsigned char *, size_t);
 
 
 /*
@@ -67,8 +68,28 @@ unsigned char *readFile(char *fPath, unsigned long *len);
 
 */
 
-void writeFile(char *fPath, unsigned char *data, unsigned long len);
+void writeFile(char *fPath, void *data, unsigned long len);
 
+
+/*
+
+	Writes a key (public/private) in a file specified by <char *loc>.
+	Args:
+
+			<size_t prefix>:	Key prefix (usually called n).
+			<size_t postfix>:	Key postfix (aka e or d)
+			<char *loc>:		Path to output file.
+	
+
+
+*/
+
+
+
+void writeKey(size_t prefix, size_t postfix, char *loc);
+void writeEncrypted(char *fPath, size_t *data, int len);
+
+unsigned char* readEncrypted(char *fPath, int *len);
 
 #endif /* _UTILS_H */
 

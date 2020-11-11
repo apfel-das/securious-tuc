@@ -69,8 +69,11 @@ size_t *sieve_of_eratosthenes(int limit, int *primes_sz)
 
 	//inform about size.
 	*primes_sz = primeCount;
-	printf("Eratosthenes is fine..\n");
-	//return array of primes.
+	
+
+
+	//return a prime-array..
+
 	return primes;
 }
 
@@ -242,11 +245,11 @@ void prime_fishing(size_t *primePool, int pool_siz, size_t *p, size_t *q)
 		q_index =  (rand() % (int)pool_siz);
 	}
 
-	//altert the actual references..
+	//alter the actual references..
 	*p = p_index;
 	*q = q_index;
 
-	printf("Phising goes great..\n");
+	
 
 
 
@@ -321,10 +324,10 @@ void rsa_keygen(void)
 		*/
 
 		//debug print, write on file..
-
+/*
 		printf("public: %ld %ld\n", n,d);
 		printf("private: %ld %ld\n", n,e);
-
+*/
 		writeKey(n,d,"public.txt");
 		writeKey(n,e, "private.txt");
 
@@ -343,6 +346,10 @@ void rsa_keygen(void)
  * arg0: path to input file
  * arg1: path to output file
  * arg2: path to key file
+
+ 	Note:
+			-	This acts as an interface/caller for <unsigned char *decrypt()>.
+
  */
 void rsa_encrypt(char *input_file, char *output_file, char *key_file)
 {
@@ -357,16 +364,26 @@ void rsa_encrypt(char *input_file, char *output_file, char *key_file)
 	//read plaintext from file..
 	plaintext = readFile(input_file, &plain_len);
 
-	printf("Plain: %s\nL: %ld\n",plaintext, plain_len);
 
 	//read the key as string..
 	key = readFile(key_file, &key_len);
 
 	//split part of key..
 	memcpy(&n, key, sizeof(size_t));
-	printf("N: %ld\n", n);
+	memcpy(&d, key + sizeof(size_t), sizeof(size_t));
 
 
+
+	//now that everything is in order, lets actually encrypt..
+
+	//allocate space, then encrypt.
+	cipher = (size_t *)malloc(plain_len*sizeof(size_t));
+	cipher = encrypt(plaintext, plain_len, n ,d);
+
+
+
+	//write ciphertext on file..
+	writeEncrypted(output_file, cipher, (int )(plain_len*sizeof(size_t)));  
 
 
 
@@ -380,10 +397,111 @@ void rsa_encrypt(char *input_file, char *output_file, char *key_file)
  * arg0: path to input file
  * arg1: path to output file
  * arg2: path to key file
+
+ Note: 
+ 		-	This acts as an interface/caller for <unsigned char *decrypt()>.
+
  */
 void rsa_decrypt(char *input_file, char *output_file, char *key_file)
 {
 
-	/* TODO */
+	unsigned char *plaintext;
+	unsigned char *c;
+	unsigned char *key;
+
+	size_t *cipher;
+	size_t n,e;
+	unsigned long cipher_len, key_len;
+	int  c_len;
+
+	//read cipher from file as string.
+	c = readEncrypted(input_file, &c_len);
+
+	//modify as size_t..
+	cipher = (size_t *)malloc(c_len);
+	memcpy(cipher, c, c_len/sizeof(size_t));
+
+
+	//read the key as string..
+	key = readFile(key_file, &key_len);
+
+	//split part of key..
+	memcpy(&n, key, sizeof(size_t));
+	memcpy(&e, key + sizeof(size_t), sizeof(size_t));
+	
+	//now that everything is in order, lets actually decrypt..
+
+
+	//assume dummies will copy-paste..
+	if((c_len%sizeof(size_t)) != 0)
+		fprintf(stderr, "This thing has nothing to do with RSA bro..\n");
+
+	//allocate space.
+	plaintext = (unsigned char *)malloc((c_len/sizeof(size_t))*sizeof(unsigned char));	
+	plaintext = decrypt(cipher, c_len/sizeof(size_t), n ,e);
+
+	/*
+		//Uncomment if debugging.
+		printf("Decrypted: %s\n", plaintext);
+	*/
+	writeFile(output_file,plaintext, strlen(plaintext));
 
 }
+
+
+/*
+	Actual RSA encryption via modular exponentiation.
+
+
+*/
+
+size_t *encrypt(unsigned char *plaintext, unsigned long len, size_t n, size_t d)
+{
+	//allocating space.
+	size_t *cipher = (size_t *)malloc(len*sizeof(size_t));
+
+
+	//run modular exponentiation for each digit with public key..
+	for(int i = 0; i < len; i++)
+	{
+		cipher[i] = mod_expo((size_t)plaintext[i], d , n);
+		
+	}
+
+	return cipher;
+
+}
+
+/*
+
+	Actual RSA 	decryption via modular exponentiation.
+
+
+*/
+
+unsigned char *decrypt(size_t *cipher, unsigned long len, size_t n, size_t e)
+{
+	//allocating space.
+	unsigned char *plaintext = (unsigned char *)malloc(len*sizeof(char) + 1);
+
+
+
+	//run modular exponentiation for each digit with private key instead..
+	for(int i = 0; i < len; i++)
+	{
+		plaintext[i] = (unsigned char )mod_expo(cipher[i], e, n);
+		
+	}
+
+	//make this thing a printable string..
+	*(plaintext + len) = '\0';
+
+
+	return plaintext;
+
+}
+
+
+
+
+

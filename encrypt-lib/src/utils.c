@@ -1,6 +1,6 @@
 #include "utils.h"
 #ifndef BUF_SIZ
-#define BUF_SIZ 512
+#define BUF_SIZ 10000
 #endif
 
 /*
@@ -195,6 +195,7 @@ unsigned char *readFile(char *fPath, unsigned long *len)
 	fclose(fp);
 
 
+
 	return data;
 
 
@@ -218,7 +219,7 @@ unsigned char *readFile(char *fPath, unsigned long *len)
 				<unsigned long len>: should not be NULL, should have a valid length.
 
 */
-void writeFile(char *fPath, unsigned char *data, unsigned long len)
+void writeFile(char *fPath, void *data, unsigned long len)
 {
 
 	//initialise a file pointer;
@@ -227,7 +228,7 @@ void writeFile(char *fPath, unsigned char *data, unsigned long len)
 
 	// opt will determine whether bytes or ASCII will be written.
 
-	fp = fopen(fPath, "wb");
+	fp = fopen(fPath, "w");
 
 	if(!fp)
 	{
@@ -242,5 +243,129 @@ void writeFile(char *fPath, unsigned char *data, unsigned long len)
 }
 
 
+/*
+
+	Reads the encrypted file as an 0-255 (unsighned char *) quantity.
+	This technique will work for encrypted files with total (ciphertext) size less than BUF_SIZ bytes.
+	Args:
+
+		<char * fPath>:	The full path of the file.
+		<int *len>:		Pointer to be informed with the actual size of the file as taken from <fread()>.
+
+	Returns:
+
+		The ciphertext gained as a string.
+	Note:
+		-	Probably bad practice, will be changed with fd and POSIX safe guidelines sometime.. [ftello, fseeko, fd usage]
+		-	If in "real-world" prefer I/O that compiles with POSIX guidelines and use file descriptors instead.
+		- 	Do not try on Windows or IDE's.
 
 
+*/
+
+
+unsigned char* readEncrypted(char *fPath, int *len)
+{
+
+
+	FILE* fp = fopen(fPath, "r");
+	
+
+	if (fp == NULL)
+		fprintf(stderr, "Unable to read the encrypted file..\n");
+
+
+	//read on buffer..
+	char* source = (char*)malloc((BUF_SIZ+1)*sizeof(char));
+	size_t actual_len = fread(source, sizeof(char), BUF_SIZ, fp);
+	
+	//avoid leaks between syscalls..
+
+	fclose(fp);
+	
+
+	//purified will be returned.
+	char* buffer = (char*)malloc((actual_len)*sizeof(char));
+	memcpy(buffer, source, actual_len);
+	
+
+	//free temporary buffer
+
+	free(source);
+
+	//inform about size.
+	*len = (int)actual_len;
+
+	
+	//the purified one get's to survive.
+	return (unsigned char*)buffer;
+}
+
+
+
+/*
+
+	Writes a key (public/private) in a file specified by <char *loc>.
+	Args:
+
+			<size_t prefix>:	Key prefix (usually called n).
+			<size_t postfix>:	Key postfix (aka e or d)
+			<char *loc>:		Path to output file.
+
+
+
+*/
+
+
+void writeKey(size_t prefix, size_t postfix, char *loc)
+{
+	FILE *fp = fopen(loc, "w");
+
+	if(fp == NULL)
+	{
+		fprintf(stderr,"Unable to write the key..\n");
+		exit(-1);
+	}
+
+	//write all at once..
+	fwrite(&prefix, 1, sizeof(size_t), fp);
+	fwrite(&postfix, 1, sizeof(size_t), fp);
+
+	//avoid leaks.
+
+	fclose(fp);
+}
+
+
+/*
+
+	
+	Writes the ciphertext as an array of <sizeof(size_t)> quantities in a file.
+	Args:
+
+		<char *fPath>:	The full path of the file.
+		<char *data>:	Data to be written.
+		<int len>: 		The length of the data to be written [usually this would be sizeof(char)*sizeof(size_t)]
+	
+	Notes:
+		- Writing all at once is a high risk proccess.
+		- Do not use in "real world" apps.
+
+*/
+
+
+void writeEncrypted(char *fPath, size_t *data,int len)
+{
+	FILE *fp = fopen(fPath,"w");
+
+	if(!fp){
+		fprintf(stderr, "Unable to write encrypted..\n");
+		exit(-1);
+	}
+
+	//write all at once..
+	fwrite(data, sizeof(size_t) ,len, fp);
+	
+
+	fclose(fp);
+}
