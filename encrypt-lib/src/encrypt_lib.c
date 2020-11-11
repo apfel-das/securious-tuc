@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 	/*
 	 * Get arguments
 	 */
-	while ((opt = getopt(argc, argv, "i:o:k:degh:f")) != -1) {
+	while ((opt = getopt(argc, argv, "i:o:k:degh")) != -1) {
 		switch (opt) {
 		case 'i':
 			input_file = strdup(optarg);
@@ -59,10 +59,7 @@ int main(int argc, char **argv)
 
 			
 			break;
-		case 'f':
-
-			op_mode = 3;
-			break;
+		
 		default:
 			usage();
 		}
@@ -84,13 +81,7 @@ int main(int argc, char **argv)
 	case 2:
 		rsa_keygen();
 		break;
-	case 3:
-		printf("Debug mode..Call functions here for testing\n");
-		
-		rsa_keygen();
-		
-		
-		break;	
+	
 
 	default:
 		break;

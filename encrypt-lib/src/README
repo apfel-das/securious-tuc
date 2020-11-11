@@ -59,7 +59,15 @@ COMMENTING:
 
 -Type "make all" to compile.
 -Type "make clean" to clean the build.
--Usage: You already know how to..:D
+-Usage: 
+	
+	"./encrypt-lib -h" is your friend.
+
+-Example:
+	"./encrypt-lib -i ../files/decryptme.txt -o ../files/decrypted.txt -k ../files/public_key.key -d"
+
+	Will decrypt a file located in "files" dir, encrypted with private_key.key (which you should provide or generate.. :D) and store the resulting plaintext in  ../files/decrypted.txt 
+
 
 
 
