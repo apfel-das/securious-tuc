@@ -2,6 +2,7 @@
 #include "utils.h"
 
 
+
 /*
  * Sieve of Eratosthenes Algorithm
  * https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes
@@ -68,7 +69,7 @@ size_t *sieve_of_eratosthenes(int limit, int *primes_sz)
 
 	//inform about size.
 	*primes_sz = primeCount;
-
+	printf("Eratosthenes is fine..\n");
 	//return array of primes.
 	return primes;
 }
@@ -83,22 +84,23 @@ size_t *sieve_of_eratosthenes(int limit, int *primes_sz)
  * arg0: first number
  * arg1: second number
  *
- * ret: the GCD
+ * ret: the GCD, might be zero!!
+ * note: I might change that later with Stein's Algo, seems kinda more efficient..
+   Change: Recursive algo is a bit quicker I tend to believe..!
  */
 int gcd(int a, int b)
 {
 
-	int common;
+	//recursive way.
 
-	while(a != 0)
-	{
-		common = a;
-		a = b % a;
-		b = common;
+	if(b == 0)
+		return a;
+	return gcd(b, a%b);
 
-	}
+	
+	
 
-	return common;
+	
 }
 
 
@@ -143,11 +145,11 @@ size_t mod_inverse(size_t a, size_t b)
 	//fast and memory efficient way..
 	a = a%b;
 
-	for(size_t i = 1; i < b; i++)
+	for(int i = 1; i < b; i++)
 	{
-		if( (a*i) % b == 1)
+		if( ((a*i)%b) == 1)
 		{
-			return i;
+			return (size_t)i;
 		}
 
 	}
@@ -159,10 +161,12 @@ size_t mod_inverse(size_t a, size_t b)
 
 /*
 	Modular exponentiatiation between base,power,reduction factor.
-	Calculates b^exp mod m.
-	Returns: Calculated exponentiation.
-	Note: That's the quick, yet bottlenecked way of doing it, but it will work for BIG exponents.
-	Hint: If wishing to stress execute mod_expo(3,1024,7) should be 4.
+	Calculates b^exp mod m., where m is the reduction factor.
+	
+
+	Returns:	Calculated exponentiation, or exits upon parameter failure.
+	Note: 		That's the quick, yet bottlenecked (due recursion) way of doing it, but it will work for BIG exponents.
+	Hint: 		If wishing to stress test execute mod_expo(3,1024,7)/mod_expo(3,2048, 7) should be 4/2.
 */
 
 size_t mod_expo(size_t b, size_t exp, size_t m)
@@ -190,6 +194,64 @@ size_t mod_expo(size_t b, size_t exp, size_t m)
 
 }
 
+/*
+
+	Selects two random primes(p,q) from a pool given [therefore "fishing"].
+	arg1: a pool to fish from.
+	arg2: the size of fishing pool.
+	arg3: pointer to p [can be NULL on call].
+	arg4: pointer to q [can be NULL on call].
+	Notes:
+
+		- <size_t *primePool>/ <arg1>:	should be an initialized pointer to a structure of prime numbers.
+		- <int pool_siz>/<arg2>:		should be also equal to the size of the pool [aka count of elements].
+		- <size_t *p>, <size_t *q>/:	will be showing to random prime numbers after calling this function.
+	
+	Important:	Possible leak if <arg3>, <arg4> don't get freed by caller.
+				Caller should ensure primePool is NOT NULL.
+
+
+
+*/
+
+void prime_fishing(size_t *primePool, int pool_siz, size_t *p, size_t *q)
+{
+
+	//random indexes on pool.
+	int p_index, q_index;
+
+	//assume dummies
+	if(!primePool || !pool_siz)
+	{
+		fprintf(stderr, "Empty pool given..[key_gen]\n");
+		exit(-1);
+	}
+
+	//seed random generator with current time, "/dev/urand" could also fit..
+	//under some compilers (unsigned)time(..) might be a best fit..
+	srand(time(NULL));
+
+	//aquire indexes, set their limits in range.
+	p_index = (rand() % (int)pool_siz);
+	q_index =  (rand() % (int)pool_siz);
+
+	//lock on equality.
+	while(p_index == q_index)
+	{
+		//re-aquire.
+		q_index =  (rand() % (int)pool_siz);
+	}
+
+	//altert the actual references..
+	*p = p_index;
+	*q = q_index;
+
+	printf("Phising goes great..\n");
+
+
+
+}
+
 
 /*
  * Generates an RSA key pair and saves
@@ -200,13 +262,79 @@ void rsa_keygen(void)
 	size_t p;
 	size_t q;
 	size_t n;
-	size_t fi_n;
+	size_t phi_n;
 	size_t e;
 	size_t d;
 
-	/* TODO */
+	//allocating space for 2 size_t quantities, represented as ASCII.
+	size_t *key_buf = (size_t*)malloc(BASE_SIZ*2);
 
+
+	
+	/*
+
+		Under the wrong pool or random number, non-suitable e's might result.
+		Threfore we are trapped until validity comes out.
+		Note:
+			This might be a pain in the ass but it resolves a great deal of issues.
+			Mostly <Floating point exception>
+
+	*/
+	do
+	{
+		//initialize a pool of RSA_SIEVE_LIMIT primes.
+		int pool_siz;
+		size_t *primePool = sieve_of_eratosthenes(RSA_SIEVE_LIMIT,&pool_siz);
+		
+		//initialize (p,q), random prime set.
+		prime_fishing(primePool, pool_siz, &p, &q);
+
+		//maths...
+		n = p*q;
+		phi_n = (p-1)*(q-1);
+		e = choose_e(phi_n, primePool, pool_siz);
+
+		
+			
+		}while(e == -1 || !(p && q) || (p == q));
+
+		/*
+			If -1 goes here as e, we get <floating point exception>.
+			Therefore we trapped the previous chapter..
+			
+		*/
+		d = mod_inverse(e, phi_n);
+
+		//d should definetly be positive, in the unlike event it isn't we should adjust.
+		while(d < 0)
+			d = d + phi_n;
+
+
+		/*
+		
+			Public vs Private key:
+	
+			n+d ->private  OR n+e->private
+			n+e ->public      n+d->public
+
+
+		*/
+
+		//debug print, write on file..
+
+		printf("public: %ld %ld\n", n,d);
+		printf("private: %ld %ld\n", n,e);
+
+		writeKey(n,d,"public.txt");
+		writeKey(n,e, "private.txt");
+
+
+		
+
+	
+	
 }
+
 
 
 /*
@@ -219,7 +347,29 @@ void rsa_keygen(void)
 void rsa_encrypt(char *input_file, char *output_file, char *key_file)
 {
 
-	/* TODO */
+	unsigned char *plaintext;
+	unsigned char *key;
+
+	size_t n,d;
+	size_t *cipher;
+	unsigned long plain_len, key_len;
+
+	//read plaintext from file..
+	plaintext = readFile(input_file, &plain_len);
+
+	printf("Plain: %s\nL: %ld\n",plaintext, plain_len);
+
+	//read the key as string..
+	key = readFile(key_file, &key_len);
+
+	//split part of key..
+	memcpy(&n, key, sizeof(size_t));
+	printf("N: %ld\n", n);
+
+
+
+
+
 
 }
 
