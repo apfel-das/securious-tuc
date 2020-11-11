@@ -77,7 +77,6 @@ COMMENTING:
 
 							** WARNINGS **
 
-- These forms of encryption even if secure (mostly OTP) are not unbreakable therefore cannot be thought as a "secure way of comms" or a "secure comms line".
-
+- These forms of encryption even if secure are not unbreakable therefore cannot be thought as a "secure way of comms" or a "secure comms line".
 - Strong suggestion when running above: USE A LINUX BASED MACHINE.
 
