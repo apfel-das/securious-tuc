@@ -14,7 +14,7 @@ A journey in Systems and Information's Security under the HPY414, Electrical and
   - Each directory represents an assignment, if not sure about how to run check the *Makefile* of each project.
   - Some of then are not suitable to even run under Windows distros [trying that in strictly discouraged].
   - Every source code in this will remain public and under common MIT Licence, but bare in mind that Universities do use plagiarism detectors which check the flow of your code [just change some stuff..].
-  - The code published is not secure to use under real-life situations since it has been built for University purposes [my Master in Computer Engineering at TUC] and therefore is unsuitable to protect or breach a real system [unless you deal with dummies or scripties].
+  - The code published is not secure to use under real-life situations since it has been built for University purposes [my MEng in Computer Engineering at TUC] and therefore is unsuitable to protect or breach a real system [unless you deal with dummies or scripties].
   - For each and every task, extended theory and its comprehension is mandatory if wishing to alter this.
   - If quetions/issues arrise feel free to comment them or mail me..
 
