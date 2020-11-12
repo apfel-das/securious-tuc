@@ -1,26 +1,34 @@
 # securious-tuc
-Repository to showcase exercises of the *HPY414 - Systems and Information Security@ECE, Technical University of Crete*.
-Written and developed at Winter Semester 2020 - 2021.
 
-* crypto_lib:
-  * Simple crypto algorithms from-scratch-implementation (One-Time-Pad, Ceasar, Vigenere) in C.
-  * Assignment 1
-  
-* encryptor:
-  * A simple encryptor, decryptor of texts using OpenSSL in C.
-  * Assignment 2
+[![Build Status](https://travis-ci.org/joemccann/dillinger.svg?branch=master)](https://travis-ci.org/joemccann/dillinger)
 
-* encrypt_lib:
-  * A simple RSA encryptor, decryptor implemented from scratch in C.
-  * Assignment 3
+A journey in Systems and Information's Security under the HPY414, Electrical and Computer Engineering@Technical University of Crete .
+
+  - crypto-lib      [Assignment 1, Simple ciphers from scratch in C].
+  - encryptor       [Assignment 2, OpenSSL and AES in C].
+  - encrypt-lib     [Assignment 3, Simple RSA encryption/decryption tool in C].
+
+## Important to know!
+### General guidelines:
+  - Projects were builted and tested under Unbuntu Linux 19.10(x86_64) via *gcc* compiler.
+  - Each directory represents an assignment, if not sure about how to run check the *Makefile* of each project.
+  - Some of then are not suitable to even run under Windows distros [trying that in strictly discouraged].
+  - Every source code in this will remain public and under common MIT Licence, but bare in mind that Universities do use plagiarism detectors which check the flow of your code [just change some stuff..].
+  - The code published is not secure to use under real-life situations since it has been built for University purposes [my Master in Computer Engineering at TUC] and therefore is unsuitable to protect or breach a real system [unless you deal with dummies or scripties].
+  - For each and every task, extended theory and its comprehension is mandatory if wishing to alter this.
+  - If quetions/issues arrise feel free to comment them or mail me..
 
 
-## Check these:
+### You must:
+-   Be capable of implementing "advanced" C concepts [such as system-calls, pointers etc.].
+-   Be brave enough.
+    
+### You can also:
+  - Fork and let me help if you wish to.
+  - Extend the functionality of those freely under your own branch.
+  - Argue about techniques or code provided [in a civilized manner].
+  - Attempt to implement tasks in languages other than C [I believe Python is a good rival here].
 
+### Hint:
+  - Code is extensively (or even excessively) commented therefore attempt to resolve any issues concerning theory by checking comments.
 
-- ### Projects built and tested on Ubuntu Linux 19.10 mostly via "gcc" [check Makefiles for more]
-- ### Repo will be public since 6/11/20 [please do not raw copy pasting, this empowers nobody's abillities..]
-- #### As afforementioned implementations were made for a University project, therefore source might not be optimal. 
-- #### Learning sources for each implementation will be listed below [feel free to comment even on my source code for any issue].
-- #### Although code is extensively (or even excessively) commented feel free to get in touch if any issue/need for help arises.
-- #### If under Meng @ Technical University of Crete , E.C.E Dept. and need help with this, ,mail me to provide u a discord link..
