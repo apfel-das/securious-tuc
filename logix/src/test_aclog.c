@@ -12,13 +12,42 @@ int main()
 			"file_8", "file_9"};
 
 
-	//definetlly waiting for denial here [NON EXISTENT]
-	fopen("skata.txt", "r");
 
-	//definettly waiting for denial here [rwx is closed via chmod].
-	fopen("poutses.txt", "r");
+	//definetlly waiting for denial here [NON EXISTENT], [LOG]
+	file = fopen("skata.txt", "r");
+
+	//won't get here unless i change "r" with "w+" [NO LOG]
+	///if(file != NULL)
+		//bytes = fwrite(filenames[7], 1, strlen(filenames[7]), file);
+
+	//definettly waiting for denial here [rwx is closed via chmod]. [LOG]
+	file = fopen("nono.txt", "r");
+	
+
+
+	//This should be created if not there [LOG]
+	file = 	fopen("loutsos.txt","a");
+
+	//this should work [LOG] [new hash as well]
+	if(file != NULL)
+		bytes = fwrite(filenames[7], 1, strlen(filenames[7]), file);
+
+	fclose(file);
+	
+
+
 
 	/* example source code */
+	
+	/*
+	
+		10 open logs and 10 write logs should be created.
+		Format:
+				open log <file i> [EMPTY HASH]
+				write log <file i> [CONTENT HASH]
+
+
+	*/
 
 	for (i = 0; i < 10; i++) {
 
@@ -33,6 +62,7 @@ int main()
 		}
 
 	}
+	
 
 
 	/* add your code here */
