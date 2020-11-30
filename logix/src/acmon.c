@@ -43,13 +43,8 @@ struct entry
 
 
 
-
-
-
-void printlist(struct entry *head);
 struct entry *read_log(FILE *fp);
 struct entry *push_log(struct entry *head, int uid, char *filepath, int file_exists,char *date, char *time, int action_type, int action_status, char *file_hash);
-int get_lines(FILE *fp);
 struct tm *get_time();
 void list_users(struct entry *log, int threshold);
 void list_mods(struct entry *log, char *target_file);
@@ -77,11 +72,16 @@ void usage(void)
 	exit(1);
 }
 
+/*
+
+	Acts mostly as handler for <void list_users(struct entry *)>.
+
+
+*/
+
 
 void list_unauthorized_accesses(FILE *log)
 {
-
-	int c = get_lines(log);
 
 	//init. a list of entries.
 	struct entry *head = read_log(log);
@@ -98,11 +98,19 @@ void list_unauthorized_accesses(FILE *log)
 
 }
 
+/*
+
+	Acts mostly as handler for <void list_mods(struct entry *, char *filepath)>.
+	
+
+*/
+
+
 
 void list_file_modifications(FILE *log, char *file_to_scan)
 {
 
-	int c = get_lines(log);
+	
 
 	//init. a list of entries.
 	struct entry *head = read_log(log);
@@ -113,11 +121,26 @@ void list_file_modifications(FILE *log, char *file_to_scan)
 
 }
 
+/*
+
+
+	Acts mostly as handler for <void list_users(struct entry *)>.
+	Args:
+			-FILE *log: A .log file path.
+			-int t: The minumun amount of files that should be found to be created in the <int time_slice>.
+	Notes:
+			-<int time_slice>: In this version is picked up by the code writter.
+
+
+
+
+*/
 
 void list_files_created(FILE *log, int t)
 {
+	int time_slice = 20; //in minutes.
 	struct entry *head = read_log(log);
-	list_files(head, 20, t);
+	list_files(head, time_slice, t);
 
 }
 
@@ -171,19 +194,6 @@ int  main(int argc, char *argv[])
 }
 
 
-
-void printlist(struct entry* head)
-{
-	struct entry *curr = head;
-
-	
-	while(curr != NULL)
-	{
-		
-		printf("%d %s %d\n",curr->uid, curr->file, curr->action_denied);
-		curr = curr->next;
-	}
-}
 
 struct entry *read_log(FILE *fp)
 {
@@ -298,37 +308,10 @@ struct entry *push_log(struct entry *head, int uid, char *filepath, int file_exi
 }
 
 
-
 /*
 
-	A utility function to count the lines of a file, specified by <FILE *fp>.
-
-*/
-
-int get_lines(FILE *fp)
-{
-
-	char curr;
-	unsigned int count = 0;
-	while((curr = fgetc(fp)) != EOF) 
-	{
-		
-	  	if(curr == '\n')
-	    	count++;
-
-    }
-
-   //set pointer to start.
-   rewind(fp);
-
-
-   return count;
-
-}
-
-/*
-
-	Lists any user attempted more than <int threshold attempts.>
+	Lists any user attempted more than <int threshold> denied attempts.
+	
 
 */
 
@@ -533,18 +516,22 @@ void list_files(struct entry *log, int time_range, int threshold)
 	
 
 	//converting to string, like our records are [definetlly easier than doing the opossite], format should be the exact same as on logger.c for the <strcmp> to work later on..
-	sprintf(init_time, "%d:%d:%d", t->tm_hour, t->tm_min, t->tm_sec); 
+	sprintf(init_time, "%2d:%d:%d", t->tm_hour, t->tm_min, t->tm_sec); 
 	sprintf(curr_date, "%d-%d-%d", t->tm_year, t->tm_mon, t->tm_mday);
-	
+	printf("Init_time: %s Curr_date: %s\n", init_time, curr_date);
 
 	//itterate through the log list.
 	while(curr)
 	{
 		
-		//if talking about the same date and specified time range, do stuff..
-		if((strcmp(curr_date, curr->date) == 0) && (strcmp(init_time, curr->time) < 0))
+		//if talking about the same date and specified time range and file was created from scratch, do stuff..
+		if((strcmp(curr_date, curr->date) == 0) && (strcmp(init_time, curr->time) < 0) && (curr->access_type == 0))
 		{
+
+
+			//just count events.
 			files_created++;
+
 		}
 
 
@@ -567,11 +554,19 @@ void list_files(struct entry *log, int time_range, int threshold)
 }
 
 
+/*
+	
+	Utility node printing.
 
+
+*/
 
 void print_log(struct entry *log)
 {
-	fprintf(stdout, "[Log]: [uid]: %-5d [filename]: %s [File Exists (0/1)]: %d [Date]: %s [Time]:%s\n", log->uid, log->file, log->file_exists, log->date, log->time);
+	if(log)
+		fprintf(stdout, "[Log]: [uid]: %-5d [filename]: %s [File Exists (0/1)]: %d [Date]: %s [Time]:%s\n", log->uid, log->file, log->file_exists, log->date, log->time);
+	else
+		fprintf(stdout, "Empty node..\n");
 }
 
 
