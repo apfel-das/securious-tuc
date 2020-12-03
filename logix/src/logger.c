@@ -130,7 +130,26 @@ FILE *fopen(const char *path, const char *mode)
 	return original_fopen_ret;
 }
 
+/*
 
+	This implementation of fopen(),gets called from most encryption libraries [openssl as well] because of large file support.
+	If wishing to log actions of those libs, we should better override that declaration
+	Args:
+			What fopen64() would ask..
+	Returns:
+
+			What fopen64() would..
+	Notes:
+			Forces fopen() usage to monitor events..
+
+*/
+FILE *fopen64(const char *path, const char *mode)
+{
+
+	return fopen(path, mode);
+
+
+}
 
 
 
@@ -403,10 +422,12 @@ int resolveAccess(const char *mode, int wasThere)
 {
 	enum action_type action;
 
+	fprintf(stderr, "Open Mode:%s\n", mode);
+
 	//the existance of the file doesn't have any effect on the action_type.
-	if(strcmp(mode, "r") == 0 || strcmp(mode, "r+") == 0)
+	if(strcmp(mode, "r") == 0 || strcmp(mode, "r+") == 0 || strcmp(mode, "rb") == 0)
 		action = OPEN;
-	else if(strcmp(mode,"w")==0 || strcmp(mode,"w+")==0)
+	else if(strcmp(mode,"w")==0 || strcmp(mode,"w+")==0 || strcmp(mode, "wb") == 0)
 		action = CREATE;
 	else if(strcmp(mode,"a")==0 || strcmp(mode,"a+")==0)
 	{
@@ -420,6 +441,7 @@ int resolveAccess(const char *mode, int wasThere)
 	}
 	else
 	{
+
 		return -1;
 	}
 
