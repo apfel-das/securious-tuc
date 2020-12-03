@@ -7,6 +7,7 @@ A journey in Systems and Information's Security under the HPY414, Electrical and
   - crypto-lib      [Assignment 1, Simple ciphers from scratch in C].
   - encryptor       [Assignment 2, OpenSSL and AES in C].
   - encrypt-lib     [Assignment 3, Simple RSA encryption/decryption tool in C].
+  - logix           [Assignment 4-5, Simple Log Monitoring tool in, Simple ransomware in Bash].
 
 ## Important to know!
 ### General guidelines:
