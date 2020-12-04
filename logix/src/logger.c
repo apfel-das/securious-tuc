@@ -13,8 +13,12 @@
 #include <string.h>
 #include <stdarg.h>
 
+
+
+
+
 #ifndef LOFFILE
-#define LOGFILE "file_logging.log"
+#define LOGFILE "//home/apfel/Desktop/securious-tuc/logix/src/file_logging.log"   // This is hardcoded, in order to monitor you should change as per your needs..
 #endif
 
 #ifndef MAXSIZE
@@ -47,18 +51,10 @@ void log_action(char *logfile, uid_t uid, const char *filepath, struct tm *time,
 
 int file_exists(const char *fName);
 int resolveAccess(const char *mode, int wasThere);
-
 unsigned char *calculate_hash(const char *path, const char *new_data);
 unsigned char *zero_fill(size_t len);
-
 char *get_file_path(const char *fName, FILE *fp);
-
 struct tm *get_time();
-
-
-
-
-
 
 
 
@@ -74,11 +70,14 @@ struct tm *get_time();
 FILE *fopen(const char *path, const char *mode) 
 {
 
+
 	//stats
 	int denied;
 	int acc_type;
 	const char *fPath;
 	unsigned char *hash;
+	int exists;
+
 
 	FILE *original_fopen_ret;
 	FILE *(*original_fopen)(const char*, const char*);
@@ -87,7 +86,6 @@ FILE *fopen(const char *path, const char *mode)
 	int isThere = file_exists(path);
 
 	
-
 	/* call the original fopen function */
 	original_fopen = dlsym(RTLD_NEXT, "fopen");
 	original_fopen_ret = (*original_fopen)(path, mode);
@@ -97,11 +95,13 @@ FILE *fopen(const char *path, const char *mode)
 	
 	*/
 
+	
+
 	//checking whether fopen() denied or not.
 	denied = (!original_fopen_ret) ? 1 : 0;
 
 	//getting the abs. file path, or NULL.
-	fPath = (file_exists(path)) ? (get_file_path(path, NULL)) : (char *)path;
+	fPath = (file_exists(path)) ? (get_file_path(path, original_fopen_ret)) : (char *)path;
 
 	//decide about the access type.
 	acc_type = resolveAccess(mode, isThere);
@@ -109,10 +109,11 @@ FILE *fopen(const char *path, const char *mode)
 	//if able calculate an MD5 hash, else pad with zeroes.
 	hash = (calculate_hash(path, NULL)) ? (calculate_hash(path, NULL)) : (zero_fill(MD5_DIGEST_LENGTH));
 
+	exists = (acc_type == 0) ? 0 : file_exists(path);
 	
 
 	//attempt to log all stats concerning the call.
-	log_action(LOGFILE, getuid(), fPath, get_time(), acc_type, denied, file_exists(path), hash);
+	log_action(LOGFILE, getuid(), fPath, get_time(), acc_type, denied, exists, hash);
 	
 
 	
@@ -123,6 +124,7 @@ FILE *fopen(const char *path, const char *mode)
 		Do what the actual function would do.
 
 	*/
+
 
 
 	//return the original so the open proc, actually happens.
@@ -150,6 +152,43 @@ FILE *fopen64(const char *path, const char *mode)
 
 
 }
+
+
+
+/*
+	
+	Lazy enough to rewrite it, I'll just handle it via fopen()..
+	This gets called from "touch " directly or via a call chain from "fd_reopen"->"open".
+	In order to monitor creation of files with "touch" cmds we need that thing overwritten.
+
+*/
+
+int open(const char *path, int flags, mode_t mode)
+{
+	
+	//we can work in there
+	if(mode < 4095)
+	{
+		//that trick will enable logging with less code written..
+		FILE *fp = fopen(path, "w");
+
+		if(chmod(path, mode) < 0)
+			fprintf(stderr, "[open]: Failed to play with permissions\n");
+
+		//no leaks allowed
+		fclose(fp);
+	}
+
+
+	//we shall return something..
+	int (*original_open_ret)(const char*, int flags, mode_t mode);
+	original_open_ret = dlsym(RTLD_NEXT,"open");
+
+
+	return (*original_open_ret)(path, flags, mode);
+	
+}
+
 
 
 
@@ -234,17 +273,23 @@ void log_action(char *logfile, uid_t uid, const char *filepath, struct tm *time,
 	FILE *fp_fopen_ret;
 
 
+
+
 	//if not there, make a log file and fix permissions.
 	if(access(logfile,F_OK) == -1)
 	{
 		
+
 		//opening logfile..
 
 		fp_fopen = dlsym(RTLD_NEXT, "fopen");
 		fp_fopen_ret = (*fp_fopen)(logfile, "w");
 
-		if(!fp_fopen_ret){
-			printf("[log_action] Error opening log file..");
+
+
+		if(!fp_fopen_ret)
+		{
+			printf("[log_action] Error opening log file..\n");
 			exit(-1);
 		}
 
@@ -317,7 +362,7 @@ struct tm *get_time()
 /*
 	
 	Returns the full file path, showed by <int fp>.
-	Also handles files that cannot open as file_descriptor cause user has insufficinet priviledges.
+	Also handles files that cannot open as file_descriptor cause user has insufficient priviledges.
 
 	Args:
 			- The filename
@@ -372,7 +417,8 @@ char *get_file_path(const char *fName, FILE *fp)
 
 		//readlink is not null-terminating, handle that as well.
 		*(path  + r) = '\0';
-		
+	
+				
 
 	}
 
@@ -644,4 +690,5 @@ void print_hex(const char *data, size_t len, FILE *fp)
 
 	fprintf(fp, "\n");
 }
+
 
