@@ -1,6 +1,6 @@
 #!/bin/bash
 # You are NOT allowed to change the files' names!
-domainNames="domainNames_tst.txt"
+domainNames="domainNames.txt"
 IPAddresses="IPAddresses.txt"
 adblockRules="adblockRules"
 ip_table="/sbin/iptables"
@@ -15,38 +15,6 @@ function handle_error()
 }
 
 
-# the actual ip lookup, uses google's DNS server..
-function ip_lookup(){
-
-	local host_name=$1
-	local dns_server="8.8.8.8" #google's DNS is quicker than mine..
-
-	#dummies will always exist; catch em..
-	if [[ ! -n "$host_name" ]]; then
-		echo "No domain provided.. [Hostname empty]"
-		exit -1
-	fi
-
-	# force custom DNS usage over the predefined; care about IPv4 only..
-	host -t A  ${hostname} &>/dev/null ${dns_server}
-
-	# be sure the whole thing worked..
-	if [[ "$?" -ne "0" ]]; then
-		echo "Something went wrong on [DNS pick]"
-		exit -1
-	fi
-
-	# get the IPv4 in terms of <[0-255]>.<[0-255]>.<[0-255]>.<[0-255]> as a format;
-	local ip_addr="$(host -t A ${host_name} ${dns_server}| awk '/has.*address/{print $NF; exit}')" 
-
-	# this acts more like a return statement, should't det printed at all on stdout..
-	echo "$ip_addr"
-
-	
-
-
-	
-}
 
 
 # reset's adblock rules to their initial format..
@@ -68,11 +36,12 @@ function reset_rules(){
 
 
 #Configures given domains by resolving their ip; appends in a file to use later..
-function resolve_domains(){
+function resolve_hosts(){
 
 	#get input file, output file..
 	input_file=$domainNames
 	output_file=$IPAddresses
+	local dns_server="8.8.8.8" #google's DNS is quicker than mine; might end up not using that later..
 	
 
 	#be sure the file is there..
@@ -81,32 +50,33 @@ function resolve_domains(){
 		exit -1
 	fi
 
-	# get domains as lines. be sure to read the last one as well..
+	#parse, resolve, exclude errors; redirect output as well..
+
 	while IFS= read -r domain || [[ -n "$domain" ]]; 
 	do
 		
-		# a trick to get the value from function
-		retval=$(ip_lookup $domain)
-		
+		# could also use "dig -f <filename>" but this takes more time; forcing -tries, -timeout makes thing also quicker in the sake of some results..
+		dig @${dns_server} ${domain} +short +tries=1 +time=5 | grep  '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$' &>> "${output_file}"
 
-		#debug printing..
-		if [[ -n "$retval" ]]; then
-			echo "$domain -> $retval"
-			echo "$retval" &>> "$output_file"
-		else
-			echo "$domain -> is down.."
-		fi
-
-		
+			
+	done<"$input_file"
 
 	
-	done<"$input_file"
 
 	
 
 }
 
+#make some blocking rules using iptables and a file specified by $IPAddresses..
+function make_rules(){
 
+	input_file=$IPAddresses
+
+	while IFS= read -r ip || [[ -n "$ip" ]]; do
+		echo "cc"
+	done < ${input_file}
+
+}
 
 
 function adBlock() {
@@ -116,17 +86,31 @@ function adBlock() {
     fi
     if [ "$1" = "-domains"  ]; then
         # Configure adblock rules based on the domain names of $domainNames file.
-      
-        resolve_domains 
+		
+
+		# resolve and lock on process; this ensures procees won't get stoped by a close of terminal..      
+        resolve_hosts &
         
+        pid=$!
+        wait $pid 
+		
+		if [[ "$?" -eq "0" ]]; then
+			echo "New rules are now online.."
+		else
+			echo "Issue arrised.."
+		fi
+
+
 
         true
             
     elif [ "$1" = "-ips"  ]; then
         # Configure adblock rules based on the IP addresses of $IPAddresses file.
-        # Write your code here...
-        # ...
-        # ...
+       	
+       	make_rules
+
+
+
         true
         
     elif [ "$1" = "-save"  ]; then
