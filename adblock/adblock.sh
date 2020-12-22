@@ -78,6 +78,7 @@ function make_rules(){
 
 }
 
+#Script's handler, dont wait for much though..
 
 function adBlock() {
     if [ "$EUID" -ne 0 ];then
@@ -85,19 +86,22 @@ function adBlock() {
         exit 1
     fi
     if [ "$1" = "-domains"  ]; then
-        # Configure adblock rules based on the domain names of $domainNames file.
+        #Configure adblock rules based on the domain names of $domainNames file.
 		
 
-		# resolve and lock on process; this ensures procees won't get stoped by a close of terminal..      
+		#resolve and lock on process; this ensures procs won't get stoped by a terminal suspension..      
         resolve_hosts &
         
+        #wait for me man..
         pid=$!
         wait $pid 
+
+        #just prompt the guy..
 		
 		if [[ "$?" -eq "0" ]]; then
-			echo "New rules are now online.."
+			echo "DNS resolved.."
 		else
-			echo "Issue arrised.."
+			echo "Issue arrised upon DNS resolution.."
 		fi
 
 
