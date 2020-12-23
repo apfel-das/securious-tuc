@@ -65,8 +65,11 @@ function make_rules(){
 	while IFS= read -r ip || [[ -n "$ip" ]]; do
 
 		# I use DROP instead of REJECT so the other end knows nothing about rejection/me..
-		sudo "$ip_table" -A FORWARD -s "$ip" -j DROP
-		sudo "$ip_table" -A INPUT -s "$ip" -j DROP 
+        # I finally decided to use REJECT cause its mentioned in "Hints" so it might make testing easier
+		sudo "$ip_table" -A FORWARD -s "$ip" -j REJECT
+		sudo "$ip_table" -A INPUT -s "$ip" -j REJECT
+        sudo "$ip_table" -A OUTPUT -d "$ip" -j REJECT
+        
 	done < ${input_file}
 
 }
