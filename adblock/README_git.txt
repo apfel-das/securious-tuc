@@ -6,16 +6,8 @@ Code developed under HPY417 - Systems and Information Security, ECE TUC 2020-21 
 	Undergrad. Student@ECE TUC
 	kpantelis@isc.tuc.gr
 	github.com/apfel-das/securious-tuc 
-	
 
-	
 
-	**! PLEASE SEE/ACCEPT ME !**
-
-	- Due to lack of time and confussion (MOSTLY),  I commited an empty README for assignment 6. I hereby commit/include the proper one for the previous assignment named as "README_ass6.txt" with the hope it gets accepted [an X-mas gift would be gladly accepted on my behalf]..
-	- I discovered the afforementioned fact when I downloaded my Assign.6 commit and opened README file, in order to copy it's format for this one.
-
-	
 
 	** ASSIGNMENT 7 **
 
@@ -75,6 +67,4 @@ Code developed under HPY417 - Systems and Information Security, ECE TUC 2020-21 
 	- Echoing in files happens via "&>>" so it should be "all-bash-varsions" compatible.
 	- "dig -f .." can also be used to avoid the manual while-loop in DNS resolution, but unknown why this had side effects on run-time/speed.
 
-	** PS **
-
-	- Merry X-MAS and a Happy -covid free- Year.
+	
