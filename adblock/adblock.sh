@@ -7,16 +7,6 @@ ip_table="/sbin/iptables"
 
 
 
-function handle_error()
-{
-	msg=$1
-
-	echo "Something went wrong on [$1]"
-}
-
-
-
-
 # reset's adblock rules to their initial format..
 function reset_rules(){
 
@@ -28,8 +18,7 @@ function reset_rules(){
 	#delete old rules; quick way used..
 
 	"$ip_table" -F 
-
-
+	"$ip_table" -X
 }
 
 
@@ -46,7 +35,7 @@ function resolve_hosts(){
 
 	#be sure the file is there..
 	if [[ ! -f "$input_file" ]]; then
-		echo "File not found, exiting.."
+		echo "[Error]: File not found, exiting.."
 		exit -1
 	fi
 
@@ -56,7 +45,7 @@ function resolve_hosts(){
 	do
 		
 		# could also use "dig -f <filename>" but this takes more time; forcing -tries, -timeout makes thing also quicker in the sake of some results..
-		dig @${dns_server} ${domain} +short +tries=1 +time=5 | grep  '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$' &>> "${output_file}"
+		dig @${dns_server} ${domain} +short +tries=2 +time=1 | grep  '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$' &>> "${output_file}"
 
 			
 	done<"$input_file"
@@ -72,8 +61,12 @@ function make_rules(){
 
 	input_file=$IPAddresses
 
+	#force sudo case timelimit reached due to resolution; seems to solve the issue..
 	while IFS= read -r ip || [[ -n "$ip" ]]; do
-		echo "cc"
+
+		# I use DROP instead of REJECT so the other end knows nothing about rejection/me..
+		sudo "$ip_table" -A FORWARD -s "$ip" -j DROP
+		sudo "$ip_table" -A INPUT -s "$ip" -j DROP 
 	done < ${input_file}
 
 }
@@ -82,7 +75,7 @@ function make_rules(){
 
 function adBlock() {
     if [ "$EUID" -ne 0 ];then
-        printf "Please run as root.\n"
+        printf "[Issue]: Please run as root.\n"
         exit 1
     fi
     if [ "$1" = "-domains"  ]; then
@@ -90,7 +83,7 @@ function adBlock() {
 		
 
 		#resolve and lock on process; this ensures procs won't get stoped by a terminal suspension..      
-        resolve_hosts &
+        resolve_hosts & #block takes 55-120 secs for about 354 IPv4's, (-time=1, -tries=2) seems like a good tradeoff..
         
         #wait for me man..
         pid=$!
@@ -99,19 +92,40 @@ function adBlock() {
         #just prompt the guy..
 		
 		if [[ "$?" -eq "0" ]]; then
-			echo "DNS resolved.."
+			echo "[Log]: DNS resolved.."
 		else
-			echo "Issue arrised upon DNS resolution.."
+			echo "[Log]: Issue arrised upon DNS resolution.."
 		fi
 
+		#lock on rule making, might take time..
+		make_rules & #not more than 30 secs for 354 IPv4's; seems cool..
 
+       	pid=$!
+       	wait $pid 
+
+       	if [[ "$?" -eq "0" ]]; then
+			echo "[Log]: Rules set.."
+		else
+			echo "[Log]: Issue arrised upon rule setting...."
+		fi
 
         true
             
     elif [ "$1" = "-ips"  ]; then
         # Configure adblock rules based on the IP addresses of $IPAddresses file.
        	
-       	make_rules
+       	make_rules &
+
+       	pid=$!
+       	wait $pid 
+
+       	if [[ "$?" -eq "0" ]]; then
+			echo "[Log]: Rules set.."
+		else
+			echo "[Log]: Issue arrised upon rule setting...."
+		fi
+
+
 
 
 
@@ -119,24 +133,20 @@ function adBlock() {
         
     elif [ "$1" = "-save"  ]; then
         # Save rules to $adblockRules file.
-        # Write your code here...
-        # ...
-        # ...
+       
+    	sudo iptables-save > adblockRules
         true
         
     elif [ "$1" = "-load"  ]; then
         # Load rules from $adblockRules file.
-        # Write your code here...
-        # ...
-        # ...
+      	
+      	sudo iptables-restore < adblockRules
         true
 
         
     elif [ "$1" = "-reset"  ]; then
         # Reset rules to default settings (i.e. accept all).
-        # Write your code here...
-        # ...
-        # ...
+    
 
         reset_rules
 
@@ -145,9 +155,9 @@ function adBlock() {
         
     elif [ "$1" = "-list"  ]; then
         # List current rules.
-        # Write your code here...
-        # ...
-        # ...
+  		"$ip_table" -L -n -v 
+
+
         true
         
     elif [ "$1" = "-help"  ]; then
@@ -163,7 +173,7 @@ function adBlock() {
         printf "  -help\t\t  Display this help and exit.\n"
         exit 0
     else
-        printf "Wrong argument. Exiting...\n"
+        printf "[Error]: Wrong argument. Exiting...\n"
         exit 1
     fi
 }
