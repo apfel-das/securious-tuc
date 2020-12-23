@@ -8,7 +8,8 @@ A journey in Systems and Information's Security under the HPY414, Electrical and
   - encryptor       [Assignment 2, OpenSSL and AES in C].
   - encrypt-lib     [Assignment 3, Simple RSA encryption/decryption tool in C].
   - logix           [Assignment 4-5, Simple Log Monitoring tool in C, Simple ransomware in Bash].
-  - netmon          [Assignment 6, Simple Network Sniffer using Libpcap in C]
+  - netmon          [Assignment 6, Simple Network Sniffer using Libpcap in C].
+  - adblock         [Assignment 7, Simple Adblocker using iptables in Bash].
 
 ## Important to know!
 ### General guidelines:
