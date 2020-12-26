@@ -15,7 +15,7 @@ A journey in Systems and Information's Security under the HPY414, Electrical and
 ### General guidelines:
   - Projects were builted and tested under Unbuntu Linux 19.10(x86_64) - 20.04(x86_64) via *gcc* compiler.
   - Each directory represents an assignment, if not sure about how to run check the *Makefile* of each project.
-  - Some of then are not suitable to even run under Windows distros [trying that in strictly discouraged].
+  - Most of them are not suitable to even run under Windows distros [trying that in strictly discouraged].
   - Every source code in this will remain public and under common MIT Licence, but bare in mind that Universities do use plagiarism detectors which check the flow of your code [just change some stuff..].
   - The code published is not secure to use under real-life situations since it has been built for University purposes [my MEng in Computer Engineering at TUC] and therefore is unsuitable to protect or breach a real system [unless you deal with dummies or scripties].
   - For each and every task, extended theory and its comprehension is mandatory if wishing to alter this.
@@ -23,6 +23,10 @@ A journey in Systems and Information's Security under the HPY414, Electrical and
 
 
 ### You must:
+-   Have some sort of understanding about:
+    - Networking (TCP, UDP, Ethernet headers) and its implementation in C (sockets, structs).
+    - Monolithic Operating Systems (for instance Linux).
+    - Algorithms and Basic Cryptography.
 -   Be capable of implementing "advanced" C concepts [such as system-calls, pointers etc.].
 -   Be brave enough.
     
